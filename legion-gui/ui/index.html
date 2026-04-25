@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legion</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================================================================
+     ONBOARDING VIEW — first launch, no identity
+     ================================================================ -->
+<div id="view-onboarding" class="view hidden">
+    <div class="onboarding-container">
+        <h1 class="onboarding-title">Legion</h1>
+        <p class="onboarding-subtitle">Decentralized. Anonymous. Yours.</p>
+
+        <form id="form-create-identity" class="card">
+            <h2>Create your identity</h2>
+            <p class="hint">Your keys are generated locally and never leave this device.</p>
+
+            <label for="input-alias">Display name</label>
+            <input id="input-alias" type="text" placeholder="e.g. Alice" maxlength="64" required>
+
+            <label for="input-password">Password</label>
+            <input id="input-password" type="password" placeholder="Encrypts your private key" required>
+
+            <label for="input-password2">Confirm password</label>
+            <input id="input-password2" type="password" placeholder="Repeat password" required>
+
+            <div class="warning-box">
+                <strong>Important:</strong> If you forget your password, your identity
+                cannot be recovered. There is no reset mechanism.
+            </div>
+
+            <button type="submit" class="btn-primary" id="btn-create">Create identity</button>
+            <div id="onboarding-error" class="error-msg hidden"></div>
+        </form>
+    </div>
+</div>
+
+<!-- ================================================================
+     MAIN VIEW — dashboard
+     ================================================================ -->
+<div id="view-main" class="view hidden">
+
+    <!-- Status bar -->
+    <div id="statusbar">
+        <span id="status-tor" class="status-indicator status-unknown">Tor</span>
+        <span id="status-queue" class="status-queue hidden">⋯ <span id="queue-count">0</span> queued</span>
+        <span id="status-alias" class="status-alias"></span>
+    </div>
+
+    <!-- App layout -->
+    <div id="app-layout">
+
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" id="tab-contacts" onclick="switchTab('contacts')">Contacts</button>
+                <button class="tab-btn" id="tab-groups" onclick="switchTab('groups')">Groups</button>
+            </div>
+
+            <!-- Contacts list -->
+            <div id="contacts-panel" class="sidebar-list">
+                <div id="contacts-list"></div>
+                <button class="btn-add" onclick="showAddContact()">+ Add contact</button>
+            </div>
+
+            <!-- Groups list -->
+            <div id="groups-panel" class="sidebar-list hidden">
+                <div id="groups-list"></div>
+                <button class="btn-add" onclick="showCreateGroup()">+ New group</button>
+            </div>
+
+            <div id="sidebar-bottom">
+                <button class="btn-icon" onclick="showPanel('settings')" title="Settings">⚙</button>
+            </div>
+        </nav>
+
+        <!-- Main panel -->
+        <main id="main-panel">
+
+            <!-- Welcome placeholder -->
+            <div id="panel-welcome" class="panel">
+                <div class="empty-state">
+                    <p>Select a contact or group to start messaging.</p>
+                </div>
+            </div>
+
+            <!-- Private messages panel -->
+            <div id="panel-messages" class="panel hidden">
+                <div class="panel-header">
+                    <span id="msg-peer-alias" class="panel-title"></span>
+                    <span id="msg-peer-key" class="panel-subtitle"></span>
+                </div>
+                <div id="messages-list" class="messages-list"></div>
+                <div class="message-input-row">
+                    <textarea id="msg-input" placeholder="Write a message…" rows="1"
+                        onkeydown="handleMsgKey(event)"></textarea>
+                    <button class="btn-send" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+
+            <!-- Group posts panel -->
+            <div id="panel-group" class="panel hidden">
+                <div class="panel-header">
+                    <span id="group-name" class="panel-title"></span>
+                    <div id="group-admin-actions" class="hidden">
+                        <button class="btn-small" onclick="showInviteMember()">Invite</button>
+                    </div>
+                </div>
+                <div id="posts-list" class="messages-list"></div>
+                <div class="message-input-row">
+                    <textarea id="post-input" placeholder="Write a post…" rows="1"
+                        onkeydown="handlePostKey(event)"></textarea>
+                    <button class="btn-send" onclick="sendPost()">Post</button>
+                </div>
+            </div>
+
+            <!-- Settings panel -->
+            <div id="panel-settings" class="panel hidden">
+                <div class="panel-header">
+                    <span class="panel-title">Settings</span>
+                </div>
+                <div class="settings-content">
+
+                    <section class="settings-section">
+                        <h3>Identity</h3>
+                        <div class="settings-row">
+                            <label>Alias</label>
+                            <span id="settings-alias"></span>
+                        </div>
+                        <div class="settings-row">
+                            <label>Public key</label>
+                            <span id="settings-pubkey" class="mono truncate"></span>
+                            <button class="btn-copy" onclick="copyPublicKey()">Copy</button>
+                        </div>
+                        <div class="settings-row">
+                            <label>Onion address</label>
+                            <span id="settings-onion" class="mono truncate"></span>
+                            <button class="btn-copy" onclick="copyOnion()">Copy</button>
+                        </div>
+                    </section>
+
+                    <section class="settings-section">
+                        <h3>Contact card</h3>
+                        <p class="hint">Share this with people who want to contact you.</p>
+                        <button class="btn-secondary" onclick="copyContactCard()">Copy contact card</button>
+                    </section>
+
+                    <section class="settings-section">
+                        <h3>Relay</h3>
+                        <p class="hint">A relay delivers messages when you are offline.</p>
+                        <div class="settings-row">
+                            <label>Onion address</label>
+                            <input id="relay-onion" type="text" placeholder="xxxxxxxx.onion">
+                        </div>
+                        <div class="settings-row">
+                            <label>Public key</label>
+                            <input id="relay-pubkey" type="text" placeholder="hex">
+                        </div>
+                        <div class="settings-row">
+                            <label>Enabled</label>
+                            <input id="relay-enabled" type="checkbox">
+                        </div>
+                        <button class="btn-primary" onclick="saveRelay()">Save relay</button>
+                        <div id="relay-status" class="hint"></div>
+                    </section>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- ================================================================
+     MODALS
+     ================================================================ -->
+
+<!-- Add contact modal -->
+<div id="modal-add-contact" class="modal hidden">
+    <div class="modal-box">
+        <h3>Add contact</h3>
+        <p class="hint">Paste the contact card JSON from your contact.</p>
+        <textarea id="contact-card-input" rows="6" placeholder='{"v":1,"public_key":"...","onion_address":"...",...}'></textarea>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal('modal-add-contact')">Cancel</button>
+            <button class="btn-primary" onclick="addContact()">Add</button>
+        </div>
+        <div id="add-contact-error" class="error-msg hidden"></div>
+    </div>
+</div>
+
+<!-- Create group modal -->
+<div id="modal-create-group" class="modal hidden">
+    <div class="modal-box">
+        <h3>New group</h3>
+        <input id="group-name-input" type="text" placeholder="Group name" maxlength="64">
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal('modal-create-group')">Cancel</button>
+            <button class="btn-primary" onclick="createGroup()">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- Invite member modal -->
+<div id="modal-invite" class="modal hidden">
+    <div class="modal-box">
+        <h3>Invite member</h3>
+        <p class="hint">Enter the public key of the contact to invite.</p>
+        <input id="invite-pubkey" type="text" placeholder="hex public key">
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal('modal-invite')">Cancel</button>
+            <button class="btn-primary" onclick="inviteMember()">Invite</button>
+        </div>
+        <div id="invite-error" class="error-msg hidden"></div>
+    </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

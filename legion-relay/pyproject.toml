@@ -1,0 +1,54 @@
+
+# Legion — decentralized, anonymous communication platform
+# Copyright (C) 2026  n3ur0-f4ll
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+
+[tool.poetry]
+name = "legion-relay"
+version = "0.1.0"
+description = "Legion relay node — anonymous message forwarding over Tor"
+authors = []
+license = "AGPL-3.0-or-later"
+packages = [{ include = "relay" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pynacl = "^1.5"
+stem = "^1.8"
+websockets = "^12.0"
+aiosqlite = "^0.20"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+pytest-asyncio = "^0.23"
+
+[tool.poetry.scripts]
+legion-relay = "main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
