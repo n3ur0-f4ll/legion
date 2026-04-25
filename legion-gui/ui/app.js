@@ -1,0 +1,767 @@
+"use strict";
+
+// ================================================================
+// State
+// ================================================================
+
+let API_PORT = 8080;
+let identity = null;
+let currentContact = null;    // { public_key, alias, onion_address }
+let currentGroup = null;      // { id, name, is_admin }
+let eventSource = null;
+let refreshTimer = null;
+
+// ================================================================
+// Initialisation
+// ================================================================
+
+window.addEventListener("DOMContentLoaded", () => {
+    // Wait for pywebview bridge, then boot
+    if (window.pywebview) {
+        boot();
+    } else {
+        window.addEventListener("pywebviewready", boot);
+    }
+});
+
+async function boot() {
+    try {
+        if (window.pywebview && window.pywebview.api) {
+            API_PORT = await window.pywebview.api.get_api_port();
+        }
+    } catch (_) { /* use default */ }
+    await initApp();
+}
+
+async function initApp() {
+    try {
+        const status = await api("GET", "/api/status");
+
+        if (status.identity_loaded) {
+            identity = await api("GET", "/api/identity");
+            await showMain();
+        } else if (status.identity_exists) {
+            showView("unlock");
+        } else {
+            showView("onboarding");
+        }
+    } catch (_) {
+        // Node unreachable — keep retrying
+        setTimeout(initApp, 1000);
+    }
+}
+
+// ================================================================
+// API helper
+// ================================================================
+
+async function api(method, path, body = null) {
+    const opts = {
+        method,
+        headers: { "Content-Type": "application/json" },
+    };
+    if (body !== null) opts.body = JSON.stringify(body);
+    let response;
+    try {
+        response = await fetch(`http://127.0.0.1:${API_PORT}${path}`, opts);
+    } catch (networkErr) {
+        const e = new Error("Cannot reach legion-node. Is it running?");
+        e.status = 0;
+        throw e;
+    }
+    if (!response.ok) {
+        let detail = "Server error";
+        try {
+            const body = await response.json();
+            if (typeof body.detail === "string") {
+                detail = body.detail;
+            } else if (Array.isArray(body.detail)) {
+                // FastAPI Pydantic validation errors: [{loc, msg, type}, ...]
+                detail = body.detail.map(e => e.msg || JSON.stringify(e)).join(", ");
+            }
+        } catch (_) {}
+        const e = new Error(detail);
+        e.status = response.status;
+        throw e;
+    }
+    if (response.status === 204) return null;
+    return response.json();
+}
+
+// ================================================================
+// View routing
+// ================================================================
+
+function showView(name) {
+    document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+    document.getElementById(`view-${name}`).classList.remove("hidden");
+}
+
+function showPanel(name) {
+    document.querySelectorAll(".panel").forEach(p => p.classList.add("hidden"));
+    document.getElementById(`panel-${name}`).classList.remove("hidden");
+    // Clear active state in sidebar
+    if (name !== "messages" && name !== "group") {
+        document.querySelectorAll(".contact-item, .group-item").forEach(el => el.classList.remove("active"));
+    }
+}
+
+function switchTab(tab) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById(`tab-${tab}`).classList.add("active");
+    document.getElementById("contacts-panel").classList.toggle("hidden", tab !== "contacts");
+    document.getElementById("groups-panel").classList.toggle("hidden", tab !== "groups");
+}
+
+// ================================================================
+// Main dashboard
+// ================================================================
+
+async function showMain() {
+    showView("main");
+    document.getElementById("status-alias").textContent = identity.alias;
+    showPanel("welcome");
+    await loadSidebar();
+    connectSSE();
+    await updateStatus();
+}
+
+async function loadSidebar() {
+    await loadContacts();
+    await loadGroups();
+}
+
+async function loadContacts() {
+    try {
+        const contacts = await api("GET", "/api/contacts");
+        const list = document.getElementById("contacts-list");
+        list.innerHTML = "";
+        contacts.forEach(c => {
+            const div = document.createElement("div");
+            div.className = "contact-item";
+            div.dataset.key = c.public_key;
+            div.innerHTML = `
+                <div class="item-info">
+                    <span class="item-name">${esc(c.alias || "Unknown")}</span>
+                    <span class="item-sub">${esc(c.public_key.slice(0, 16))}…</span>
+                </div>
+                <button class="btn-delete-item" title="Edit alias">✎</button>
+                <button class="btn-delete-item" title="Remove contact">×</button>
+            `;
+            div.querySelector(".item-info").addEventListener("click", () => openConversation(c));
+            const [btnEdit, btnDel] = div.querySelectorAll(".btn-delete-item");
+            btnEdit.addEventListener("click", (e) => {
+                e.stopPropagation();
+                editContactAlias(c, div);
+            });
+            btnDel.addEventListener("click", (e) => {
+                e.stopPropagation();
+                deleteContact(c);
+            });
+            list.appendChild(div);
+        });
+    } catch (_) {}
+}
+
+async function loadGroups() {
+    try {
+        const groups = await api("GET", "/api/groups");
+        const list = document.getElementById("groups-list");
+        list.innerHTML = "";
+        groups.forEach(g => {
+            const div = document.createElement("div");
+            div.className = "group-item";
+            div.dataset.id = g.id;
+            div.innerHTML = `
+                <div class="item-info">
+                    <span class="item-name">${esc(g.name)}</span>
+                    <span class="item-sub">${g.is_admin ? "admin" : "member"}</span>
+                </div>
+                <button class="btn-delete-item" title="Leave / delete group">×</button>
+            `;
+            div.querySelector(".item-info").addEventListener("click", () => openGroup(g));
+            div.querySelector(".btn-delete-item").addEventListener("click", (e) => {
+                e.stopPropagation();
+                deleteGroup(g);
+            });
+            list.appendChild(div);
+        });
+    } catch (_) {}
+}
+
+async function updateStatus() {
+    try {
+        const status = await api("GET", "/api/status");
+        const torEl = document.getElementById("status-tor");
+        if (status.onion_address) {
+            torEl.textContent = "Tor ✓";
+            torEl.className = "status-indicator status-ok";
+        } else {
+            torEl.textContent = "Tor …";
+            torEl.className = "status-indicator status-unknown";
+        }
+    } catch (_) {}
+}
+
+// ================================================================
+// SSE — live updates
+// ================================================================
+
+function connectSSE() {
+    if (eventSource) eventSource.close();
+    eventSource = new EventSource(`http://127.0.0.1:${API_PORT}/api/events`);
+
+    eventSource.onmessage = (e) => {
+        try {
+            const event = JSON.parse(e.data);
+            handleEvent(event);
+        } catch (_) {}
+    };
+
+    eventSource.onerror = () => {
+        // Reconnect after 5 seconds
+        eventSource.close();
+        setTimeout(connectSSE, 5000);
+    };
+}
+
+function handleEvent(event) {
+    if (event.type === "message") {
+        // If we're viewing this conversation, refresh messages
+        if (currentContact && event.from === currentContact.public_key) {
+            loadMessages(currentContact);
+        }
+        loadContacts(); // update sidebar (could have new contact)
+        if (window.pywebview) {
+            window.pywebview.api.show_notification("New message", "You have a new message");
+        }
+    } else if (event.type === "delivery_status") {
+        // Refresh conversation to show updated status dot (queued → delivered)
+        if (currentContact) {
+            loadMessages(currentContact);
+        }
+    } else if (event.type === "group_invite") {
+        loadGroups();
+        showToast("You were invited to a group");
+    }
+}
+
+// ================================================================
+// Unlock
+// ================================================================
+
+document.getElementById("form-unlock").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const password = document.getElementById("input-unlock-password").value;
+    const errEl   = document.getElementById("unlock-error");
+    const btn     = document.getElementById("btn-unlock");
+
+    errEl.classList.add("hidden");
+    btn.disabled = true;
+    btn.textContent = "Unlocking…";
+
+    try {
+        identity = await api("POST", "/api/identity/unlock", { password });
+        await showMain();
+    } catch (err) {
+        showError(errEl, err.status === 401 ? "Wrong password." : err.message);
+        btn.disabled = false;
+        btn.textContent = "Unlock";
+        document.getElementById("input-unlock-password").value = "";
+        document.getElementById("input-unlock-password").focus();
+    }
+});
+
+// ================================================================
+// Onboarding
+// ================================================================
+
+document.getElementById("form-create-identity").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const alias = document.getElementById("input-alias").value.trim();
+    const pw1   = document.getElementById("input-password").value;
+    const pw2   = document.getElementById("input-password2").value;
+    const errEl = document.getElementById("onboarding-error");
+
+    errEl.classList.add("hidden");
+
+    if (pw1 !== pw2) {
+        showError(errEl, "Passwords do not match.");
+        return;
+    }
+    if (pw1.length < 8) {
+        showError(errEl, "Password must be at least 8 characters.");
+        return;
+    }
+
+    const btn = document.getElementById("btn-create");
+    btn.disabled = true;
+    btn.textContent = "Creating…";
+
+    try {
+        identity = await api("POST", "/api/identity/create", { alias, password: pw1 });
+        await showMain();
+    } catch (err) {
+        showError(errEl, err.message);
+        btn.disabled = false;
+        btn.textContent = "Create identity";
+    }
+});
+
+// ================================================================
+// Private messages
+// ================================================================
+
+async function openConversation(contact) {
+    currentContact = contact;
+    currentGroup = null;
+
+    document.querySelectorAll(".contact-item").forEach(el =>
+        el.classList.toggle("active", el.dataset.key === contact.public_key)
+    );
+
+    document.getElementById("msg-peer-alias").textContent = contact.alias || "Unknown";
+    document.getElementById("msg-peer-key").textContent = contact.public_key.slice(0, 24) + "…";
+
+    showPanel("messages");
+    await loadMessages(contact);
+}
+
+async function loadMessages(contact) {
+    try {
+        const messages = await api("GET", `/api/messages/${contact.public_key}`);
+        const list = document.getElementById("messages-list");
+        list.innerHTML = "";
+        messages.forEach(msg => {
+            const isOutgoing = msg.from_key === identity.public_key;
+            const bubble = document.createElement("div");
+            bubble.className = `message-bubble ${isOutgoing ? "outgoing" : "incoming"}`;
+            const ts = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+            const text = msg.text != null ? esc(msg.text) : '<em style="opacity:.5">[encrypted]</em>';
+            bubble.innerHTML = `
+                <div class="message-text">${text}</div>
+                <div class="message-meta">
+                    <span>${ts}</span>
+                    <span class="status-dot ${msg.status}" title="${msg.status}"></span>
+                </div>
+            `;
+            list.appendChild(bubble);
+        });
+        list.scrollTop = list.scrollHeight;
+    } catch (_) {}
+}
+
+async function sendMessage() {
+    if (!currentContact || !identity) return;
+    const input = document.getElementById("msg-input");
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = "";
+    input.style.height = "auto";
+
+    try {
+        await api("POST", "/api/messages", {
+            to: currentContact.public_key,
+            text,
+            onion: currentContact.onion_address,
+        });
+        await loadMessages(currentContact);
+    } catch (err) {
+        showToast("Failed to send: " + err.message);
+    }
+}
+
+function handleMsgKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+    autoResize(e.target);
+}
+
+// ================================================================
+// Groups
+// ================================================================
+
+async function openGroup(group) {
+    currentGroup = group;
+    currentContact = null;
+
+    document.querySelectorAll(".group-item").forEach(el =>
+        el.classList.toggle("active", el.dataset.id === group.id)
+    );
+
+    document.getElementById("group-name").textContent = group.name;
+    const adminActions = document.getElementById("group-admin-actions");
+    adminActions.classList.toggle("hidden", !group.is_admin);
+
+    showPanel("group");
+    await loadPosts(group);
+}
+
+async function loadPosts(group) {
+    try {
+        const posts = await api("GET", `/api/groups/${group.id}/posts`);
+        const list = document.getElementById("posts-list");
+        list.innerHTML = "";
+        posts.forEach(post => {
+            const isOurs = post.author_key === identity.public_key;
+            const bubble = document.createElement("div");
+            bubble.className = `message-bubble ${isOurs ? "outgoing" : "incoming"}`;
+            const ts = new Date(post.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+            const author = isOurs ? "You" : post.author_key.slice(0, 10) + "…";
+            const text = post.text != null ? esc(post.text) : '<em style="opacity:.5">[encrypted]</em>';
+            bubble.innerHTML = `
+                <div class="message-text">${text}</div>
+                <div class="message-meta">
+                    <span>${author}</span>
+                    <span>${ts}</span>
+                </div>
+            `;
+            list.appendChild(bubble);
+        });
+        list.scrollTop = list.scrollHeight;
+    } catch (_) {}
+}
+
+async function sendPost() {
+    if (!currentGroup) return;
+    const input = document.getElementById("post-input");
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = "";
+    input.style.height = "auto";
+
+    try {
+        await api("POST", `/api/groups/${currentGroup.id}/posts`, { text });
+        await loadPosts(currentGroup);
+    } catch (err) {
+        showToast("Failed to post: " + err.message);
+    }
+}
+
+function handlePostKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendPost();
+    }
+    autoResize(e.target);
+}
+
+// ================================================================
+// Settings
+// ================================================================
+
+async function showSettings() {
+    showPanel("settings");
+    if (!identity) return;
+
+    document.getElementById("settings-alias").value = identity.alias;
+    document.getElementById("alias-status").textContent = "";
+    document.getElementById("settings-pubkey").textContent = identity.public_key;
+    document.getElementById("settings-onion").textContent = identity.onion_address;
+
+    // Load relay config
+    try {
+        const status = await api("GET", "/api/status");
+        // Relay settings are in the node's config — not exposed via status yet
+        // Show relay_configured indicator
+        document.getElementById("relay-status").textContent =
+            status.relay_configured ? "Relay active" : "No relay configured";
+    } catch (_) {}
+}
+
+async function saveAlias() {
+    const alias = document.getElementById("settings-alias").value.trim();
+    const statusEl = document.getElementById("alias-status");
+    if (!alias) return;
+    try {
+        const result = await api("PATCH", "/api/identity/alias", { alias });
+        identity.alias = result.alias;
+        document.getElementById("status-alias").textContent = result.alias;
+        statusEl.textContent = "Saved.";
+        setTimeout(() => { statusEl.textContent = ""; }, 2000);
+    } catch (err) {
+        statusEl.textContent = "Error: " + err.message;
+    }
+}
+
+function copyPublicKey() {
+    const key = document.getElementById("settings-pubkey").textContent;
+    copyToClipboard(key, "Public key copied");
+}
+
+function copyOnion() {
+    const onion = document.getElementById("settings-onion").textContent;
+    copyToClipboard(onion, "Onion address copied");
+}
+
+async function copyContactCard() {
+    if (!identity) return;
+    try {
+        const card = await api("GET", "/api/identity/card");
+        copyToClipboard(JSON.stringify(card), "Contact card copied");
+    } catch (err) {
+        showToast("Failed to get contact card: " + err.message);
+    }
+}
+
+async function panicDelete() {
+    if (!confirm("⚠ PANIC DELETE\n\nThis will permanently destroy:\n• Your identity and private key\n• All contacts\n• All messages\n• All groups\n\nThis CANNOT be undone. Continue?")) return;
+    if (!confirm("Are you absolutely sure? There is no recovery.")) return;
+
+    try {
+        await api("DELETE", "/api/identity");
+        identity = null;
+        currentContact = null;
+        currentGroup = null;
+        if (eventSource) { eventSource.close(); eventSource = null; }
+        showView("onboarding");
+    } catch (err) {
+        showToast("Error: " + err.message);
+    }
+}
+
+async function saveRelay() {
+    const onion = document.getElementById("relay-onion").value.trim();
+    const pubkey = document.getElementById("relay-pubkey").value.trim();
+    const enabled = document.getElementById("relay-enabled").checked;
+
+    if (!onion || !pubkey) {
+        document.getElementById("relay-status").textContent = "Fill in both fields.";
+        return;
+    }
+
+    try {
+        // The API doesn't expose relay config editing yet — note for future
+        showToast("Relay config saved (requires node restart to take effect)");
+        document.getElementById("relay-status").textContent = enabled ? "Relay active" : "Relay disabled";
+    } catch (err) {
+        document.getElementById("relay-status").textContent = "Error: " + err.message;
+    }
+}
+
+// ================================================================
+// Delete contact / group
+// ================================================================
+
+function editContactAlias(contact, itemEl) {
+    const nameEl = itemEl.querySelector(".item-name");
+    const current = contact.alias || "";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = current;
+    input.maxLength = 64;
+    input.style.cssText = "width:100%;background:var(--bg-tertiary);border:1px solid var(--accent);border-radius:3px;color:var(--text-primary);font-family:var(--font);font-size:13px;padding:2px 6px;";
+
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    async function commit() {
+        const alias = input.value.trim();
+        if (alias && alias !== current) {
+            try {
+                await api("PATCH", `/api/contacts/${contact.public_key}/alias`, { alias });
+                contact.alias = alias;
+                if (currentContact && currentContact.public_key === contact.public_key) {
+                    currentContact.alias = alias;
+                    document.getElementById("msg-peer-alias").textContent = alias;
+                }
+            } catch (_) {}
+        }
+        await loadContacts();
+    }
+
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+        if (e.key === "Escape") { input.value = current; input.blur(); }
+    });
+}
+
+async function deleteContact(contact) {
+    if (!confirm(`Remove "${contact.alias || contact.public_key.slice(0, 16)}" from contacts?`)) return;
+    try {
+        await api("DELETE", `/api/contacts/${contact.public_key}`);
+        if (currentContact && currentContact.public_key === contact.public_key) {
+            currentContact = null;
+            showPanel("welcome");
+        }
+        await loadContacts();
+        showToast("Contact removed");
+    } catch (err) {
+        showToast("Error: " + err.message);
+    }
+}
+
+async function deleteGroup(group) {
+    const label = `"${group.name}"`;
+    const msg = group.is_admin
+        ? `Delete group ${label}? This will remove all posts and members locally.`
+        : `Leave group ${label}? This removes it from your local list.`;
+    if (!confirm(msg)) return;
+    try {
+        await api("DELETE", `/api/groups/${group.id}`);
+        if (currentGroup && currentGroup.id === group.id) {
+            currentGroup = null;
+            showPanel("welcome");
+        }
+        await loadGroups();
+        showToast(group.is_admin ? "Group deleted" : "Left group");
+    } catch (err) {
+        showToast("Error: " + err.message);
+    }
+}
+
+// ================================================================
+// Add contact modal
+// ================================================================
+
+function showAddContact() {
+    document.getElementById("contact-card-input").value = "";
+    document.getElementById("add-contact-error").classList.add("hidden");
+    openModal("modal-add-contact");
+}
+
+async function addContact() {
+    const raw = document.getElementById("contact-card-input").value.trim();
+    const errEl = document.getElementById("add-contact-error");
+    errEl.classList.add("hidden");
+
+    let card;
+    try {
+        card = JSON.parse(raw);
+    } catch (_) {
+        showError(errEl, "Invalid JSON.");
+        return;
+    }
+
+    try {
+        await api("POST", "/api/contacts", card);
+        closeModal("modal-add-contact");
+        await loadContacts();
+        showToast("Contact added");
+    } catch (err) {
+        showError(errEl, err.message);
+    }
+}
+
+// ================================================================
+// Create group modal
+// ================================================================
+
+function showCreateGroup() {
+    document.getElementById("group-name-input").value = "";
+    openModal("modal-create-group");
+}
+
+async function createGroup() {
+    const name = document.getElementById("group-name-input").value.trim();
+    if (!name) return;
+
+    try {
+        const group = await api("POST", "/api/groups", { name });
+        closeModal("modal-create-group");
+        await loadGroups();
+        openGroup(group);
+        showToast("Group created");
+    } catch (err) {
+        showToast("Error: " + err.message);
+    }
+}
+
+// ================================================================
+// Invite member modal
+// ================================================================
+
+function showInviteMember() {
+    document.getElementById("invite-pubkey").value = "";
+    document.getElementById("invite-error").classList.add("hidden");
+    openModal("modal-invite");
+}
+
+async function inviteMember() {
+    if (!currentGroup) return;
+    const pubkey = document.getElementById("invite-pubkey").value.trim();
+    const errEl = document.getElementById("invite-error");
+    errEl.classList.add("hidden");
+
+    if (!pubkey) return;
+
+    // Look up contact to get onion address
+    try {
+        const contacts = await api("GET", "/api/contacts");
+        const contact = contacts.find(c => c.public_key === pubkey);
+        if (!contact) {
+            showError(errEl, "Contact not found. Add them first.");
+            return;
+        }
+        await api("POST", `/api/groups/${currentGroup.id}/invite`, {
+            public_key: pubkey,
+            onion: contact.onion_address,
+        });
+        closeModal("modal-invite");
+        showToast("Invitation sent");
+    } catch (err) {
+        showError(errEl, err.message);
+    }
+}
+
+// ================================================================
+// Utilities
+// ================================================================
+
+function esc(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+}
+
+function showError(el, msg) {
+    el.textContent = msg;
+    el.classList.remove("hidden");
+}
+
+function showToast(msg, duration = 3000) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), duration);
+}
+
+function openModal(id) {
+    document.getElementById(id).classList.remove("hidden");
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.add("hidden");
+}
+
+function copyToClipboard(text, successMsg = "Copied") {
+    if (window.pywebview && window.pywebview.api) {
+        window.pywebview.api.copy_to_clipboard(text).then(ok => {
+            if (ok) showToast(successMsg);
+            else showToast("Clipboard unavailable");
+        });
+    } else {
+        navigator.clipboard.writeText(text).then(() => showToast(successMsg)).catch(() => {});
+    }
+}
+
+// Close modals on backdrop click
+document.querySelectorAll(".modal").forEach(modal => {
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal(modal.id);
+    });
+});

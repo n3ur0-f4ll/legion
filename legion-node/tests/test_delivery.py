@@ -25,7 +25,7 @@ import pytest
 
 from core.identity import generate as gen
 from core.storage import Database
-from messaging.delivery import RETRY_SCHEDULE, DeliveryQueue, _entry_id, _reconstruct_message
+from messaging.delivery import RETRY_SCHEDULE, DeliveryQueue, _entry_id, _load_message_json
 from messaging.private import send
 
 ALICE = gen("alice")
@@ -60,42 +60,26 @@ def test_entry_id_differs_on_different_message():
 
 
 # ------------------------------------------------------------------
-# _reconstruct_message
+# _load_message_json
 # ------------------------------------------------------------------
 
-async def test_reconstruct_message_returns_dict(db):
-    msg = await _send_msg(db)
-    result = await _reconstruct_message(db, msg["id"])
-    assert result is not None
-    assert result["id"] == msg["id"]
-    assert result["type"] == "msg"
+def test_load_message_json_valid():
+    import json
+    msg = {"v": 1, "type": "msg", "id": "abc"}
+    entry = {"message_json": json.dumps(msg)}
+    assert _load_message_json(entry) == msg
 
 
-async def test_reconstruct_message_fields_match(db):
-    msg = await _send_msg(db)
-    result = await _reconstruct_message(db, msg["id"])
-    assert result["from"] == msg["from"]
-    assert result["to"] == msg["to"]
-    assert result["payload"] == msg["payload"]
-    assert result["signature"] == msg["signature"]
-    assert result["timestamp"] == msg["timestamp"]
+def test_load_message_json_empty_returns_none():
+    assert _load_message_json({"message_json": ""}) is None
 
 
-async def test_reconstruct_missing_message_returns_none(db):
-    result = await _reconstruct_message(db, "nonexistent_id")
-    assert result is None
+def test_load_message_json_missing_key_returns_none():
+    assert _load_message_json({}) is None
 
 
-async def test_reconstruct_expired_message_returns_none(db):
-    msg = await _send_msg(db)
-    # Manually expire it
-    await db._conn.execute(
-        "UPDATE messages SET expires_at = ? WHERE id = ?",
-        (NOW - 1, msg["id"]),
-    )
-    await db._conn.commit()
-    result = await _reconstruct_message(db, msg["id"])
-    assert result is None
+def test_load_message_json_invalid_json_returns_none():
+    assert _load_message_json({"message_json": "not json"}) is None
 
 
 # ------------------------------------------------------------------
@@ -228,15 +212,18 @@ async def test_process_due_follows_full_retry_schedule(db):
 
 
 async def test_process_due_removes_orphaned_entry(db):
-    """If message_id no longer exists in messages table, entry is removed."""
-    msg = await _send_msg(db)
-    q = DeliveryQueue(db, sender=None)
-    await q.enqueue(msg, "bob.onion")
-
-    # Delete the message from messages table
-    await db._conn.execute("DELETE FROM messages WHERE id = ?", (msg["id"],))
+    """Entry with empty message_json is treated as orphan and removed."""
+    import json as _json
+    # Manually insert an entry with empty message_json (legacy/corrupt entry)
+    await db._conn.execute(
+        "INSERT INTO delivery_queue "
+        "(id, message_id, destination_key, destination_onion, message_json, next_retry_at) "
+        "VALUES ('eid1', 'mid1', 'key1', 'bob.onion', '', ?)",
+        (NOW,),
+    )
     await db._conn.commit()
 
+    q = DeliveryQueue(db, sender=None)
     sent, failed = await q.process_due(NOW + 1)
     assert sent == 0
     assert failed == 0  # orphan: removed, not counted as failure

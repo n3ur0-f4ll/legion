@@ -30,13 +30,12 @@ automatycznych prób — użytkownik może ją usunąć ręcznie.
 from __future__ import annotations
 
 import asyncio
-import base64
 import hashlib
+import json
 import logging
 import time
 from typing import Awaitable, Callable
 
-from core.protocol import MSG_PRIVATE
 from core.storage import Database
 
 logger = logging.getLogger(__name__)
@@ -44,6 +43,7 @@ logger = logging.getLogger(__name__)
 RETRY_SCHEDULE = [60, 300, 900, 3600, 21600, 86400]
 
 Sender = Callable[[dict, str], Awaitable[None]]  # (msg_dict, onion_address) -> None
+OnDelivered = Callable[[str], Awaitable[None]]   # (message_id) -> None
 
 _LOOP_INTERVAL = 30  # seconds between queue sweeps
 
@@ -55,9 +55,15 @@ class DeliveryQueue:
     the sender callable (network.client.send_message or relay equivalent).
     """
 
-    def __init__(self, db: Database, sender: Sender) -> None:
+    def __init__(
+        self,
+        db: Database,
+        sender: Sender,
+        on_delivered: OnDelivered | None = None,
+    ) -> None:
         self._db = db
         self._sender = sender
+        self._on_delivered = on_delivered
         self._task: asyncio.Task | None = None
         self._running = False
 
@@ -78,6 +84,7 @@ class DeliveryQueue:
             destination_key=msg["to"],
             destination_onion=destination_onion,
             next_retry_at=int(time.time()),
+            message_json=json.dumps(msg),
             via_relay=via_relay,
         )
 
@@ -137,9 +144,15 @@ class DeliveryQueue:
 
         Returns True (sent), False (failed, retry scheduled), or None (orphan removed).
         """
-        msg_dict = await _reconstruct_message(self._db, entry["message_id"])
+        msg_dict = _load_message_json(entry)
         if msg_dict is None:
-            logger.warning("Delivery entry %s has no matching message — removing", entry["id"])
+            logger.warning("Delivery entry %s has no message JSON — removing", entry["id"])
+            await self._db.dequeue(entry["id"])
+            return None
+
+        # Skip expired messages
+        ttl = msg_dict.get("ttl", 0)
+        if int(time.time()) - msg_dict.get("timestamp", 0) > ttl:
             await self._db.dequeue(entry["id"])
             return None
 
@@ -147,6 +160,11 @@ class DeliveryQueue:
             await self._sender(msg_dict, entry["destination_onion"])
             await self._db.dequeue(entry["id"])
             await self._db.update_message_status(entry["message_id"], "delivered")
+            if self._on_delivered:
+                try:
+                    await self._on_delivered(entry["message_id"])
+                except Exception:
+                    pass
             return True
         except Exception:
             retry_count = entry["retry_count"]
@@ -161,32 +179,18 @@ class DeliveryQueue:
 # helpers
 # ------------------------------------------------------------------
 
-async def _reconstruct_message(db: Database, message_id: str) -> dict | None:
-    """Rebuild a protocol message dict from the messages table.
+def _load_message_json(entry: dict) -> dict | None:
+    """Load message dict from the queue entry's stored JSON.
 
-    Returns None if the message is not found or has expired.
-    Messages in this table are always type MSG_PRIVATE ("msg").
+    Returns None if the entry has no JSON (legacy entry without message_json).
     """
-    row = await db.get_message_by_id(message_id)
-    if row is None:
+    raw = entry.get("message_json", "")
+    if not raw:
         return None
-
-    now = int(time.time())
-    if row["expires_at"] < now:
+    try:
+        return json.loads(raw)
+    except Exception:
         return None
-
-    ttl = row["expires_at"] - row["timestamp"]
-    return {
-        "v": 1,
-        "type": MSG_PRIVATE,
-        "id": row["id"],
-        "from": row["from_key"],
-        "to": row["to_key"],
-        "payload": base64.b64encode(row["payload"]).decode(),
-        "signature": base64.b64encode(row["signature"]).decode(),
-        "timestamp": row["timestamp"],
-        "ttl": ttl,
-    }
 
 
 def _entry_id(message_id: str, destination_key: str) -> str:

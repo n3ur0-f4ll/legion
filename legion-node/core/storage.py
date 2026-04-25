@@ -61,6 +61,16 @@ class Database:
     # identity
     # ------------------------------------------------------------------
 
+    async def panic_wipe(self) -> None:
+        """Panic button — irreversibly delete all data from all tables."""
+        tables = [
+            "delivery_queue", "group_posts", "group_members", "groups",
+            "messages", "contacts", "relay_config", "identity",
+        ]
+        for table in tables:
+            await self._conn.execute(f"DELETE FROM {table}")
+        await self._conn.commit()
+
     async def save_identity(
         self,
         public_key: str,
@@ -72,6 +82,12 @@ class Database:
         await self._conn.execute(
             "INSERT OR REPLACE INTO identity VALUES (?, ?, ?, ?, ?)",
             (public_key, private_key, onion_address, alias, created_at),
+        )
+        await self._conn.commit()
+
+    async def update_identity_alias(self, alias: str) -> None:
+        await self._conn.execute(
+            "UPDATE identity SET alias = ?", (alias,)
         )
         await self._conn.commit()
 
@@ -132,9 +148,23 @@ class Database:
             row = await cur.fetchone()
         return dict(row) if row else None
 
+    async def update_contact_alias(self, public_key: str, alias: str) -> None:
+        await self._conn.execute(
+            "UPDATE contacts SET alias = ? WHERE public_key = ?", (alias, public_key)
+        )
+        await self._conn.commit()
+
     async def delete_contact(self, public_key: str) -> None:
         await self._conn.execute(
             "DELETE FROM contacts WHERE public_key = ?", (public_key,)
+        )
+        await self._conn.commit()
+
+    async def delete_messages_with_peer(self, peer_key: str) -> None:
+        """Delete all messages exchanged with a peer (both directions)."""
+        await self._conn.execute(
+            "DELETE FROM messages WHERE from_key = ? OR to_key = ?",
+            (peer_key, peer_key),
         )
         await self._conn.commit()
 
@@ -212,6 +242,15 @@ class Database:
         async with self._conn.execute("SELECT * FROM groups") as cur:
             rows = await cur.fetchall()
         return [dict(r) for r in rows]
+
+    async def delete_group(self, id: str) -> None:
+        """Delete a group and all its members and posts."""
+        for table in ("group_posts", "group_members", "groups"):
+            await self._conn.execute(
+                f"DELETE FROM {table} WHERE {'group_id' if table != 'groups' else 'id'} = ?",
+                (id,),
+            )
+        await self._conn.commit()
 
     async def get_group(self, id: str) -> dict | None:
         async with self._conn.execute(
@@ -293,13 +332,16 @@ class Database:
         destination_key: str,
         destination_onion: str,
         next_retry_at: int,
+        message_json: str = "",
         via_relay: bool = False,
     ) -> None:
         await self._conn.execute(
             "INSERT OR IGNORE INTO delivery_queue "
-            "(id, message_id, destination_key, destination_onion, next_retry_at, retry_count, via_relay) "
-            "VALUES (?, ?, ?, ?, ?, 0, ?)",
-            (id, message_id, destination_key, destination_onion, next_retry_at, int(via_relay)),
+            "(id, message_id, destination_key, destination_onion, "
+            "message_json, next_retry_at, retry_count, via_relay) "
+            "VALUES (?, ?, ?, ?, ?, ?, 0, ?)",
+            (id, message_id, destination_key, destination_onion,
+             message_json, next_retry_at, int(via_relay)),
         )
         await self._conn.commit()
 
@@ -333,3 +375,11 @@ class Database:
 async def _apply_schema(conn: aiosqlite.Connection) -> None:
     sql = _SCHEMA.read_text()
     await conn.executescript(sql)
+    # Migration: add message_json column to delivery_queue (idempotent)
+    try:
+        await conn.execute(
+            "ALTER TABLE delivery_queue ADD COLUMN message_json TEXT NOT NULL DEFAULT ''"
+        )
+        await conn.commit()
+    except Exception:
+        pass  # column already exists

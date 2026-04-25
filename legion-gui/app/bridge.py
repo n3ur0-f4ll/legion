@@ -43,18 +43,35 @@ class LegionBridge:
 
     def copy_to_clipboard(self, text: str) -> bool:
         """Copy text to system clipboard. Returns True on success."""
+        import os
         encoded = text.encode()
-        for cmd in (
-            ["xclip", "-selection", "clipboard"],
-            ["xsel", "--clipboard", "--input"],
-            ["wl-copy"],
-        ):
+
+        # Prefer tool matching the running display server
+        if os.environ.get("WAYLAND_DISPLAY"):
+            candidates = (
+                ["wl-copy"],
+                ["xclip", "-selection", "clipboard"],
+                ["xsel", "--clipboard", "--input"],
+            )
+            install_hint = "sudo pacman -S wl-clipboard"
+        else:
+            candidates = (
+                ["xclip", "-selection", "clipboard"],
+                ["xsel", "--clipboard", "--input"],
+                ["wl-copy"],
+            )
+            install_hint = "sudo pacman -S xclip"
+
+        for cmd in candidates:
             try:
                 subprocess.run(cmd, input=encoded, check=True, capture_output=True)
                 return True
             except (FileNotFoundError, subprocess.CalledProcessError):
                 continue
-        logger.warning("No clipboard tool found (xclip/xsel/wl-copy)")
+
+        logger.warning(
+            "No clipboard tool found. Install one: %s", install_hint
+        )
         return False
 
     def show_notification(self, title: str, message: str) -> None:

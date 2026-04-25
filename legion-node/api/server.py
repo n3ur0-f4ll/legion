@@ -72,6 +72,10 @@ class AppState:
     tor_onion: str = ""
     _event_queues: list[asyncio.Queue] = field(default_factory=list)
 
+    async def on_message_delivered(self, message_id: str) -> None:
+        """Called by DeliveryQueue when a message is successfully delivered."""
+        self.push_event("delivery_status", {"id": message_id, "status": "delivered"})
+
     def push_event(self, event_type: str, data: dict) -> None:
         payload = {"type": event_type, **data}
         for q in self._event_queues:
@@ -128,6 +132,14 @@ class PostGroupRequest(BaseModel):
     text: str
 
 
+class UnlockRequest(BaseModel):
+    password: str
+
+
+class AliasRequest(BaseModel):
+    alias: str
+
+
 # ------------------------------------------------------------------
 # App factory
 # ------------------------------------------------------------------
@@ -156,6 +168,33 @@ def create_app(state: AppState) -> FastAPI:
     # ------------------------------------------------------------------
     # Identity
     # ------------------------------------------------------------------
+
+    @app.post("/api/identity/unlock")
+    async def unlock_identity(req: UnlockRequest, s: AppState = Depends(get_state)):
+        if s.identity is not None:
+            return {
+                "public_key": s.identity.public_key.hex(),
+                "onion_address": s.identity.onion_address,
+                "alias": s.identity.alias,
+            }
+        row = await s.db.load_identity()
+        if row is None:
+            raise HTTPException(status_code=404, detail="No identity found")
+        try:
+            private_key = decrypt_private_key(row["private_key"], req.password)
+        except Exception:
+            raise HTTPException(status_code=401, detail="Wrong password")
+        s.identity = Identity(
+            public_key=bytes.fromhex(row["public_key"]),
+            private_key=private_key,
+            onion_address=row["onion_address"],
+            alias=row["alias"],
+        )
+        return {
+            "public_key": s.identity.public_key.hex(),
+            "onion_address": s.identity.onion_address,
+            "alias": s.identity.alias,
+        }
 
     @app.post("/api/identity/create", status_code=201)
     async def create_identity(
@@ -190,6 +229,40 @@ def create_app(state: AppState) -> FastAPI:
             "alias": identity.alias,
         }
 
+    @app.delete("/api/identity", status_code=204)
+    async def panic_delete(s: AppState = Depends(get_state)):
+        """Panic button — wipe all data, clear in-memory identity."""
+        await s.db.panic_wipe()
+        s.identity = None
+
+    @app.patch("/api/identity/alias")
+    async def update_alias(req: AliasRequest, deps=Depends(require_identity)):
+        s, identity = deps
+        alias = req.alias.strip()
+        if not alias:
+            raise HTTPException(status_code=422, detail="Alias cannot be empty")
+        await s.db.update_identity_alias(alias)
+        # Update in-memory identity
+        s.identity = identity.__class__(
+            public_key=identity.public_key,
+            private_key=identity.private_key,
+            onion_address=identity.onion_address,
+            alias=alias,
+        )
+        return {"alias": alias}
+
+    @app.get("/api/identity/card")
+    async def get_contact_card(deps=Depends(require_identity)):
+        """Return a signed contact card ready to share with other users."""
+        from core.protocol import build_contact_card
+        _, identity = deps
+        return build_contact_card(
+            identity.public_key,
+            identity.onion_address,
+            identity.private_key,
+            alias_hint=identity.alias,
+        )
+
     # ------------------------------------------------------------------
     # Contacts
     # ------------------------------------------------------------------
@@ -215,11 +288,24 @@ def create_app(state: AppState) -> FastAPI:
         )
         return await s.db.get_contact(card["public_key"])
 
+    @app.patch("/api/contacts/{public_key}/alias")
+    async def update_contact_alias(
+        public_key: str, req: AliasRequest, s: AppState = Depends(get_state)
+    ):
+        if await s.db.get_contact(public_key) is None:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        alias = req.alias.strip()
+        if not alias:
+            raise HTTPException(status_code=422, detail="Alias cannot be empty")
+        await s.db.update_contact_alias(public_key, alias)
+        return {"alias": alias}
+
     @app.delete("/api/contacts/{public_key}", status_code=204)
     async def delete_contact(public_key: str, s: AppState = Depends(get_state)):
         if await s.db.get_contact(public_key) is None:
             raise HTTPException(status_code=404, detail="Contact not found")
         await s.db.delete_contact(public_key)
+        await s.db.delete_messages_with_peer(public_key)
 
     # ------------------------------------------------------------------
     # Messages
@@ -228,7 +314,10 @@ def create_app(state: AppState) -> FastAPI:
     @app.get("/api/messages/{public_key}")
     async def get_messages(public_key: str, deps=Depends(require_identity)):
         s, identity = deps
-        return await private.get_conversation(s.db, identity.public_key, bytes.fromhex(public_key))
+        rows = await private.get_conversation(
+            s.db, identity.public_key, bytes.fromhex(public_key)
+        )
+        return [_decrypt_message(row, identity) for row in rows]
 
     @app.post("/api/messages", status_code=201)
     async def send_message(req: SendMessageRequest, deps=Depends(require_identity)):
@@ -256,6 +345,12 @@ def create_app(state: AppState) -> FastAPI:
         s, identity = deps
         return _group_safe(await groups.create_group(s.db, identity, req.name))
 
+    @app.delete("/api/groups/{group_id}", status_code=204)
+    async def delete_group(group_id: str, s: AppState = Depends(get_state)):
+        if await s.db.get_group(group_id) is None:
+            raise HTTPException(status_code=404, detail="Group not found")
+        await s.db.delete_group(group_id)
+
     @app.post("/api/groups/{group_id}/invite", status_code=201)
     async def invite_member(
         group_id: str,
@@ -280,7 +375,10 @@ def create_app(state: AppState) -> FastAPI:
 
     @app.get("/api/groups/{group_id}/posts")
     async def get_posts(group_id: str, s: AppState = Depends(get_state)):
-        return await groups.get_posts(s.db, group_id)
+        group = await s.db.get_group(group_id)
+        group_key = group["group_key"] if group else None
+        posts = await groups.get_posts(s.db, group_id)
+        return [_decrypt_post(row, group_key) for row in posts]
 
     @app.post("/api/groups/{group_id}/posts", status_code=201)
     async def create_post(
@@ -313,8 +411,10 @@ def create_app(state: AppState) -> FastAPI:
 
     @app.get("/api/status")
     async def get_status(s: AppState = Depends(get_state)):
+        row = await s.db.load_identity()
         return {
             "identity_loaded": s.identity is not None,
+            "identity_exists": row is not None,
             "onion_address": s.tor_onion or (s.identity.onion_address if s.identity else ""),
             "relay_configured": await _relay_active(s.db),
         }
@@ -406,6 +506,38 @@ async def run_app(state: AppState, port: int = 8080) -> None:
 def _group_safe(group: dict) -> dict:
     """Strip group_key (binary secret) from API responses."""
     return {k: v for k, v in group.items() if k != "group_key"}
+
+
+def _decrypt_message(row: dict, identity) -> dict:
+    """Add decrypted 'text' field to a message row. Sets text=None on failure."""
+    result = dict(row)
+    try:
+        our_hex = identity.public_key.hex()
+        peer_hex = row["from_key"] if row["from_key"] != our_hex else row["to_key"]
+        peer_key = bytes.fromhex(peer_hex)
+        result["text"] = crypto.decrypt(
+            identity.private_key, peer_key, row["payload"]
+        ).decode()
+    except Exception:
+        result["text"] = None
+    # Never expose raw payload bytes to the GUI
+    result.pop("payload", None)
+    result.pop("signature", None)
+    return result
+
+
+def _decrypt_post(row: dict, group_key: bytes | None) -> dict:
+    """Add decrypted 'text' field to a group post row. Sets text=None on failure."""
+    result = dict(row)
+    try:
+        if group_key is None:
+            raise ValueError("no group key")
+        result["text"] = crypto.decrypt_group(group_key, row["payload"]).decode()
+    except Exception:
+        result["text"] = None
+    result.pop("payload", None)
+    result.pop("signature", None)
+    return result
 
 
 async def _relay_active(db: Database) -> bool:

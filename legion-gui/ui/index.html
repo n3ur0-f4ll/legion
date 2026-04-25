@@ -9,6 +9,24 @@
 <body>
 
 <!-- ================================================================
+     UNLOCK VIEW — identity exists, waiting for password
+     ================================================================ -->
+<div id="view-unlock" class="view hidden">
+    <div class="onboarding-container">
+        <h1 class="onboarding-title">Legion</h1>
+        <form id="form-unlock" class="card">
+            <h2>Enter your password</h2>
+            <p class="hint" id="unlock-alias"></p>
+            <label for="input-unlock-password">Password</label>
+            <input id="input-unlock-password" type="password"
+                   placeholder="Your identity password" required autofocus>
+            <button type="submit" class="btn-primary" id="btn-unlock">Unlock</button>
+            <div id="unlock-error" class="error-msg hidden"></div>
+        </form>
+    </div>
+</div>
+
+<!-- ================================================================
      ONBOARDING VIEW — first launch, no identity
      ================================================================ -->
 <div id="view-onboarding" class="view hidden">
@@ -75,7 +93,7 @@
             </div>
 
             <div id="sidebar-bottom">
-                <button class="btn-icon" onclick="showPanel('settings')" title="Settings">⚙</button>
+                <button class="btn-icon" onclick="showSettings()" title="Settings">⚙</button>
             </div>
         </nav>
 
@@ -130,8 +148,10 @@
                         <h3>Identity</h3>
                         <div class="settings-row">
                             <label>Alias</label>
-                            <span id="settings-alias"></span>
+                            <input id="settings-alias" type="text" maxlength="64" placeholder="Your display name">
+                            <button class="btn-copy" onclick="saveAlias()">Save</button>
                         </div>
+                        <div id="alias-status" class="hint" style="margin-left:110px"></div>
                         <div class="settings-row">
                             <label>Public key</label>
                             <span id="settings-pubkey" class="mono truncate"></span>
@@ -167,6 +187,15 @@
                         </div>
                         <button class="btn-primary" onclick="saveRelay()">Save relay</button>
                         <div id="relay-status" class="hint"></div>
+                    </section>
+
+                    <section class="settings-section settings-danger">
+                        <h3>Danger zone</h3>
+                        <p class="hint">
+                            Permanently deletes your identity, all contacts, messages and groups.
+                            This action cannot be undone.
+                        </p>
+                        <button class="btn-panic" onclick="panicDelete()">⚠ PANIC — Delete everything</button>
                     </section>
 
                 </div>

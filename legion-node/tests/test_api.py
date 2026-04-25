@@ -80,7 +80,80 @@ async def test_status_with_identity(client):
 async def test_status_no_identity(client_no_identity):
     r = await client_no_identity.get("/api/status")
     assert r.status_code == 200
-    assert r.json()["identity_loaded"] is False
+    data = r.json()
+    assert data["identity_loaded"] is False
+    assert data["identity_exists"] is False
+
+
+async def test_status_identity_exists_not_loaded(state_no_identity):
+    """identity_exists=True when DB has identity but AppState.identity is None."""
+    from core.identity import encrypt_private_key
+    await state_no_identity.db.save_identity(
+        public_key=ALICE.public_key.hex(),
+        private_key=encrypt_private_key(ALICE.private_key, "pw"),
+        onion_address=ALICE.onion_address,
+        alias="alice",
+        created_at=0,
+    )
+    app = create_app(state_no_identity)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/api/status")
+    data = r.json()
+    assert data["identity_loaded"] is False
+    assert data["identity_exists"] is True
+
+
+# ------------------------------------------------------------------
+# POST /api/identity/unlock
+# ------------------------------------------------------------------
+
+async def test_unlock_no_identity_returns_404(client_no_identity):
+    r = await client_no_identity.post("/api/identity/unlock", json={"password": "pw"})
+    assert r.status_code == 404
+
+
+async def test_unlock_wrong_password_returns_401(state_no_identity):
+    from core.identity import encrypt_private_key
+    import time
+    await state_no_identity.db.save_identity(
+        public_key=ALICE.public_key.hex(),
+        private_key=encrypt_private_key(ALICE.private_key, "correct"),
+        onion_address=ALICE.onion_address,
+        alias="alice",
+        created_at=int(time.time()),
+    )
+    app = create_app(state_no_identity)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/api/identity/unlock", json={"password": "wrong"})
+    assert r.status_code == 401
+
+
+async def test_unlock_correct_password_loads_identity(state_no_identity):
+    from core.identity import encrypt_private_key
+    import time
+    await state_no_identity.db.save_identity(
+        public_key=ALICE.public_key.hex(),
+        private_key=encrypt_private_key(ALICE.private_key, "secret"),
+        onion_address=ALICE.onion_address,
+        alias="alice",
+        created_at=int(time.time()),
+    )
+    assert state_no_identity.identity is None
+    app = create_app(state_no_identity)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.post("/api/identity/unlock", json={"password": "secret"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["public_key"] == ALICE.public_key.hex()
+    assert state_no_identity.identity is not None
+    assert state_no_identity.identity.private_key == ALICE.private_key
+
+
+async def test_unlock_already_loaded_returns_identity(client):
+    """Calling unlock when already loaded returns identity without error."""
+    r = await client.post("/api/identity/unlock", json={"password": "any"})
+    assert r.status_code == 200
+    assert r.json()["public_key"] == ALICE.public_key.hex()
 
 
 # ------------------------------------------------------------------
@@ -188,6 +261,43 @@ async def test_get_messages_empty(client):
     assert r.json() == []
 
 
+async def test_get_messages_returns_decrypted_text(client, state):
+    """Sent message must come back with plaintext 'text' field."""
+    r = await client.post("/api/messages", json={
+        "to": BOB.public_key.hex(),
+        "text": "hello bob",
+        "onion": BOB.onion_address,
+    })
+    assert r.status_code == 201
+
+    r = await client.get(f"/api/messages/{BOB.public_key.hex()}")
+    messages = r.json()
+    assert len(messages) == 1
+    assert messages[0]["text"] == "hello bob"
+    assert "payload" not in messages[0]
+    assert "signature" not in messages[0]
+
+
+async def test_get_messages_incoming_decrypted(client, state):
+    """Received message (encrypted by peer for us) must also be decrypted."""
+    # Simulate BOB sending to ALICE (ALICE is the identity in state)
+    from core.protocol import build_message, MSG_PRIVATE
+    from messaging.private import receive
+    import base64
+
+    payload = __import__("core.crypto", fromlist=["encrypt"]).encrypt(
+        BOB.private_key, ALICE.public_key, b"incoming text"
+    )
+    msg = build_message(MSG_PRIVATE, BOB.public_key, ALICE.public_key, payload, BOB.private_key)
+    await receive(state.db, ALICE, msg)
+
+    r = await client.get(f"/api/messages/{BOB.public_key.hex()}")
+    messages = r.json()
+    received = [m for m in messages if m["from_key"] == BOB.public_key.hex()]
+    assert len(received) == 1
+    assert received[0]["text"] == "incoming text"
+
+
 async def test_send_message_queues(client, state):
     enqueued = []
     async def capturing_sender(msg, onion):
@@ -260,6 +370,26 @@ async def test_create_post(client):
     r = await client.post(f"/api/groups/{group_id}/posts", json={"text": "hello group"})
     assert r.status_code == 201
     assert r.json()["status"] == "queued"
+
+
+async def test_get_posts_returns_decrypted_text(client):
+    r = await client.post("/api/groups", json={"name": "Crew"})
+    group_id = r.json()["id"]
+    await client.post(f"/api/groups/{group_id}/posts", json={"text": "secret post"})
+
+    r = await client.get(f"/api/groups/{group_id}/posts")
+    posts = r.json()
+    assert len(posts) == 1
+    assert posts[0]["text"] == "secret post"
+    assert "payload" not in posts[0]
+    assert "signature" not in posts[0]
+
+
+async def test_get_posts_unknown_group_returns_empty_with_null_text(client):
+    """Posts for unknown group return empty list, not 404."""
+    r = await client.get(f"/api/groups/{'a' * 64}/posts")
+    assert r.status_code == 200
+    assert r.json() == []
 
 
 async def test_create_post_unknown_group_returns_404(client):

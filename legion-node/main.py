@@ -92,22 +92,23 @@ async def _load_identity(db: Database) -> Identity | None:
 # Core async entry point
 # ------------------------------------------------------------------
 
-async def _run(config: Config) -> None:
+async def _run(config: Config, interactive: bool = True) -> None:
     config.ensure_dirs()
 
     async with Database.open(config.db_path) as db:
-        identity = await _load_identity(db)
+        identity = await _load_identity(db) if interactive else None
         if identity is None:
             logger.info(
-                "No identity loaded. Create one via POST /api/identity/create."
+                "No identity loaded. Unlock via POST /api/identity/unlock."
             )
 
         # Sender: resolves destination and calls network client
         async def sender(msg: dict, onion: str) -> None:
             await send_message(msg, onion, socks_port=config.socks_port)
 
-        dq = DeliveryQueue(db, sender=sender)
-        state = AppState(db=db, delivery_queue=dq, identity=identity)
+        state = AppState(db=db, delivery_queue=None, identity=identity)
+        dq = DeliveryQueue(db, sender=sender, on_delivered=state.on_message_delivered)
+        state.delivery_queue = dq
 
         # NodeServer — listens for inbound WebSocket messages
         node_server = NodeServer(host="127.0.0.1", port=config.node_port)
@@ -179,6 +180,11 @@ def _parse_args() -> argparse.Namespace:
         default="INFO",
         help="Log level (default: INFO)",
     )
+    parser.add_argument(
+        "--no-interactive",
+        action="store_true",
+        help="Start without password prompt — GUI will unlock via /api/identity/unlock",
+    )
     return parser.parse_args()
 
 
@@ -197,7 +203,7 @@ def main() -> None:
         logging.getLogger(name).setLevel(logging.WARNING)
 
     try:
-        asyncio.run(_run(config))
+        asyncio.run(_run(config, interactive=not args.no_interactive))
     except KeyboardInterrupt:
         pass
 

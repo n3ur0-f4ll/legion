@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS delivery_queue (
     message_id          TEXT NOT NULL,
     destination_key     TEXT NOT NULL,
     destination_onion   TEXT NOT NULL,
+    message_json        TEXT NOT NULL DEFAULT '',
     next_retry_at       INTEGER NOT NULL,
     retry_count         INTEGER DEFAULT 0,
     via_relay           INTEGER DEFAULT 0
