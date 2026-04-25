@@ -106,7 +106,18 @@ async def _run(config: Config, interactive: bool = True) -> None:
         async def sender(msg: dict, onion: str) -> None:
             await send_message(msg, onion, socks_port=config.socks_port)
 
-        state = AppState(db=db, delivery_queue=None, identity=identity)
+        tor = TorManager(
+            config.tor_data_dir,
+            socks_port=config.socks_port,
+            control_port=config.control_port,
+        )
+        state = AppState(
+            db=db,
+            delivery_queue=None,
+            identity=identity,
+            tor_manager=tor,
+            node_port=config.node_port,
+        )
         dq = DeliveryQueue(db, sender=sender, on_delivered=state.on_message_delivered)
         state.delivery_queue = dq
 
@@ -119,12 +130,8 @@ async def _run(config: Config, interactive: bool = True) -> None:
         # DeliveryQueue background loop
         await dq.start()
 
-        # Tor — start last before API so onion address is ready
-        tor = TorManager(
-            config.tor_data_dir,
-            socks_port=config.socks_port,
-            control_port=config.control_port,
-        )
+        # Interactive mode: identity loaded from DB — start Tor now synchronously
+        # Non-interactive (GUI) mode: Tor starts after identity unlock via API
         if identity is not None:
             try:
                 onion = await tor.start(identity.private_key, hs_port=config.node_port)

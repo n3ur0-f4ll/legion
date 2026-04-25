@@ -91,7 +91,12 @@ class TorManager:
         loop = asyncio.get_event_loop()
 
         try:
-            self._process = await loop.run_in_executor(None, self._launch)
+            self._process = await asyncio.wait_for(
+                loop.run_in_executor(None, self._launch),
+                timeout=_BOOTSTRAP_TIMEOUT,
+            )
+        except asyncio.TimeoutError as exc:
+            raise TorError("Tor failed to bootstrap within timeout") from exc
         except Exception as exc:
             raise TorError(f"Failed to launch Tor process: {exc}") from exc
 
@@ -141,7 +146,12 @@ class TorManager:
     # ------------------------------------------------------------------
 
     def _launch(self):
-        """Start the Tor subprocess and wait for full bootstrap."""
+        """Start the Tor subprocess and wait for full bootstrap.
+
+        No timeout here — stem's timeout uses signal.alarm() which is
+        restricted to the main thread. Timeout is handled by asyncio.wait_for
+        in start() instead.
+        """
         return stem.process.launch_tor_with_config(
             config={
                 "SocksPort": str(self._socks_port),
@@ -150,7 +160,6 @@ class TorManager:
                 "Log": "notice stderr",
                 "ExitPolicy": "reject *:*",
             },
-            timeout=_BOOTSTRAP_TIMEOUT,
             take_ownership=True,
         )
 

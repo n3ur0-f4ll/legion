@@ -33,8 +33,12 @@ import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator
 
+import logging
+
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
+
+logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -70,6 +74,9 @@ class AppState:
     delivery_queue: DeliveryQueue
     identity: Identity | None = None
     tor_onion: str = ""
+    tor_manager: object | None = None   # TorManager — typed as object to avoid circular import
+    node_port: int = 8765
+    _tor_starting: bool = False
     _event_queues: list[asyncio.Queue] = field(default_factory=list)
 
     async def on_message_delivered(self, message_id: str) -> None:
@@ -144,6 +151,25 @@ class AliasRequest(BaseModel):
 # App factory
 # ------------------------------------------------------------------
 
+async def _start_tor_background(state: AppState) -> None:
+    """Start Tor hidden service in background after identity becomes available."""
+    if state._tor_starting or not state.tor_manager or not state.identity:
+        return
+    tm = state.tor_manager
+    if hasattr(tm, "is_running") and tm.is_running:
+        return
+    state._tor_starting = True
+    try:
+        onion = await tm.start(state.identity.private_key, hs_port=state.node_port)
+        state.tor_onion = onion
+        logger.info("Hidden service started: %s", onion)
+        state.push_event("tor_ready", {"onion_address": onion})
+    except Exception as exc:
+        logger.error("Tor start failed: %s", exc)
+    finally:
+        state._tor_starting = False
+
+
 def create_app(state: AppState) -> FastAPI:
     """Create and configure the FastAPI application."""
     app = FastAPI(title="Legion Node API", docs_url=None, redoc_url=None)
@@ -190,6 +216,7 @@ def create_app(state: AppState) -> FastAPI:
             onion_address=row["onion_address"],
             alias=row["alias"],
         )
+        asyncio.create_task(_start_tor_background(s))
         return {
             "public_key": s.identity.public_key.hex(),
             "onion_address": s.identity.onion_address,
@@ -214,6 +241,7 @@ def create_app(state: AppState) -> FastAPI:
             created_at=int(time.time()),
         )
         s.identity = identity
+        asyncio.create_task(_start_tor_background(s))
         return {
             "public_key": identity.public_key.hex(),
             "onion_address": identity.onion_address,
@@ -412,10 +440,14 @@ def create_app(state: AppState) -> FastAPI:
     @app.get("/api/status")
     async def get_status(s: AppState = Depends(get_state)):
         row = await s.db.load_identity()
+        tor_running = bool(s.tor_onion)
+        tor_starting = s._tor_starting
         return {
             "identity_loaded": s.identity is not None,
             "identity_exists": row is not None,
-            "onion_address": s.tor_onion or (s.identity.onion_address if s.identity else ""),
+            "onion_address": s.tor_onion,
+            "tor_running": tor_running,
+            "tor_starting": tor_starting,
             "relay_configured": await _relay_active(s.db),
         }
 

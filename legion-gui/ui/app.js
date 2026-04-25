@@ -193,12 +193,15 @@ async function updateStatus() {
     try {
         const status = await api("GET", "/api/status");
         const torEl = document.getElementById("status-tor");
-        if (status.onion_address) {
+        if (status.tor_running) {
             torEl.textContent = "Tor ✓";
             torEl.className = "status-indicator status-ok";
-        } else {
+        } else if (status.tor_starting) {
             torEl.textContent = "Tor …";
             torEl.className = "status-indicator status-unknown";
+        } else {
+            torEl.textContent = "Tor ✗";
+            torEl.className = "status-indicator status-error";
         }
     } catch (_) {}
 }
@@ -235,6 +238,9 @@ function handleEvent(event) {
         if (window.pywebview) {
             window.pywebview.api.show_notification("New message", "You have a new message");
         }
+    } else if (event.type === "tor_ready") {
+        updateStatus();
+        showToast("Tor hidden service active");
     } else if (event.type === "delivery_status") {
         // Refresh conversation to show updated status dot (queued → delivered)
         if (currentContact) {
