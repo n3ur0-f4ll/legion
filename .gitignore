@@ -1,0 +1,7 @@
+__pycache__
+CLAUDE*
+*.db
+.venv
+MASTERPROMPT.md
+.user-*
+.pytest_cache
