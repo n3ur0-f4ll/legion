@@ -148,6 +148,19 @@ class Database:
             row = await cur.fetchone()
         return dict(row) if row else None
 
+    async def is_contact(self, public_key: str) -> bool:
+        async with self._conn.execute(
+            "SELECT 1 FROM contacts WHERE public_key = ?", (public_key,)
+        ) as cur:
+            return await cur.fetchone() is not None
+
+    async def is_group_member(self, group_id: str, public_key: str) -> bool:
+        async with self._conn.execute(
+            "SELECT 1 FROM group_members WHERE group_id = ? AND public_key = ?",
+            (group_id, public_key),
+        ) as cur:
+            return await cur.fetchone() is not None
+
     async def update_contact_alias(self, public_key: str, alias: str) -> None:
         await self._conn.execute(
             "UPDATE contacts SET alias = ? WHERE public_key = ?", (alias, public_key)

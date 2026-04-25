@@ -420,9 +420,12 @@ async def test_invite_member_invalid_key_returns_422(client):
 # ------------------------------------------------------------------
 
 async def test_handler_stores_incoming_message(state):
+    # BOB must be a contact for the message to be accepted
+    import time
+    await state.db.save_contact(BOB.public_key.hex(), BOB.onion_address, "Bob", int(time.time()))
+
     msg = build_message(
         MSG_PRIVATE, BOB.public_key, ALICE.public_key,
-        # BOB encrypts for ALICE
         __import__("core.crypto", fromlist=["encrypt"]).encrypt(
             BOB.private_key, ALICE.public_key, b"hello alice"
         ),
@@ -435,7 +438,9 @@ async def test_handler_stores_incoming_message(state):
 
 
 async def test_handler_pushes_sse_event(state):
-    events = []
+    import time
+    await state.db.save_contact(BOB.public_key.hex(), BOB.onion_address, "Bob", int(time.time()))
+
     q = state._add_event_queue()
 
     msg = build_message(
@@ -453,6 +458,21 @@ async def test_handler_pushes_sse_event(state):
     assert event["type"] == "message"
     assert event["from"] == BOB.public_key.hex()
     state._remove_event_queue(q)
+
+
+async def test_handler_drops_unknown_sender(state):
+    """Messages from senders not in contacts are silently dropped."""
+    msg = build_message(
+        MSG_PRIVATE, BOB.public_key, ALICE.public_key,
+        __import__("core.crypto", fromlist=["encrypt"]).encrypt(
+            BOB.private_key, ALICE.public_key, b"hello"
+        ),
+        BOB.private_key,
+    )
+    handler = make_message_handler(state)
+    await handler(msg)  # BOB is not in contacts
+    rows = await state.db.get_messages(BOB.public_key.hex(), ALICE.public_key.hex())
+    assert rows == []
 
 
 async def test_handler_ignores_wrong_recipient(state):

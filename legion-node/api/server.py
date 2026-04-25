@@ -77,6 +77,7 @@ class AppState:
     tor_manager: object | None = None   # TorManager — typed as object to avoid circular import
     node_port: int = 8765
     _tor_starting: bool = False
+    tor_error: str = ""
     _event_queues: list[asyncio.Queue] = field(default_factory=list)
 
     async def on_message_delivered(self, message_id: str) -> None:
@@ -159,13 +160,17 @@ async def _start_tor_background(state: AppState) -> None:
     if hasattr(tm, "is_running") and tm.is_running:
         return
     state._tor_starting = True
+    state.tor_error = ""
+    state.push_event("tor_status", {"status": "starting"})
     try:
         onion = await tm.start(state.identity.private_key, hs_port=state.node_port)
         state.tor_onion = onion
         logger.info("Hidden service started: %s", onion)
         state.push_event("tor_ready", {"onion_address": onion})
     except Exception as exc:
+        state.tor_error = str(exc)
         logger.error("Tor start failed: %s", exc)
+        state.push_event("tor_status", {"status": "error", "error": str(exc)})
     finally:
         state._tor_starting = False
 
@@ -437,6 +442,16 @@ def create_app(state: AppState) -> FastAPI:
     # Status
     # ------------------------------------------------------------------
 
+    @app.post("/api/tor/retry", status_code=202)
+    async def retry_tor(deps=Depends(require_identity)):
+        s, _ = deps
+        if s._tor_starting:
+            return {"status": "already_starting"}
+        if s.tor_onion:
+            return {"status": "already_running"}
+        asyncio.create_task(_start_tor_background(s))
+        return {"status": "starting"}
+
     @app.get("/api/status")
     async def get_status(s: AppState = Depends(get_state)):
         row = await s.db.load_identity()
@@ -448,6 +463,7 @@ def create_app(state: AppState) -> FastAPI:
             "onion_address": s.tor_onion,
             "tor_running": tor_running,
             "tor_starting": tor_starting,
+            "tor_error": s.tor_error,
             "relay_configured": await _relay_active(s.db),
         }
 
@@ -484,32 +500,47 @@ def create_app(state: AppState) -> FastAPI:
 def make_message_handler(state: AppState):
     """Return an async handler to pass to NodeServer.start().
 
-    Decrypts incoming messages, stores them, and pushes SSE events.
+    Only processes messages from known contacts or group members.
+    Unknown senders are silently dropped — no response, no log.
     """
     async def handler(msg: dict) -> None:
         if state.identity is None:
             return
 
+        sender = msg.get("from", "")
         msg_type = msg.get("type")
 
         if msg_type == "msg":
+            if not await state.db.is_contact(sender):
+                return  # silent drop — unknown sender
             try:
-                plaintext = await private.receive(state.db, state.identity, msg)
-                state.push_event("message", {
-                    "from": msg["from"],
-                    "id": msg["id"],
-                })
+                await private.receive(state.db, state.identity, msg)
+                state.push_event("message", {"from": sender, "id": msg["id"]})
             except Exception:
-                pass  # bad decryption or wrong recipient — silent drop
+                pass
 
         elif msg_type == "group_invite":
+            if not await state.db.is_contact(sender):
+                return  # only accept invites from known contacts
             try:
                 group = await groups.accept_invite(state.db, state.identity, msg)
                 state.push_event("group_invite", {"group_id": group["id"]})
             except Exception:
                 pass
 
-        # group_post and delivery_ack are handled by the relay/delivery layer
+        elif msg_type == "group_post":
+            group_id = msg.get("to", "")
+            if not await state.db.is_group_member(group_id, sender):
+                return  # not a member of this group — silent drop
+            try:
+                await groups.receive_post(state.db, state.identity, group_id, msg)
+                state.push_event("group_post", {
+                    "group_id": group_id,
+                    "from": sender,
+                    "id": msg["id"],
+                })
+            except Exception:
+                pass
 
     return handler
 

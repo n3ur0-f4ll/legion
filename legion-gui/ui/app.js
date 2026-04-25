@@ -196,14 +196,34 @@ async function updateStatus() {
         if (status.tor_running) {
             torEl.textContent = "Tor ✓";
             torEl.className = "status-indicator status-ok";
+            torEl.title = status.onion_address;
         } else if (status.tor_starting) {
             torEl.textContent = "Tor …";
             torEl.className = "status-indicator status-unknown";
+            torEl.title = "Tor is starting…";
+        } else if (status.tor_error) {
+            torEl.textContent = "Tor ✗";
+            torEl.className = "status-indicator status-error";
+            torEl.title = status.tor_error + "\n\nClick to retry";
         } else {
             torEl.textContent = "Tor ✗";
             torEl.className = "status-indicator status-error";
+            torEl.title = "Tor is not running. Click to start.";
         }
     } catch (_) {}
+}
+
+async function retryTor() {
+    const torEl = document.getElementById("status-tor");
+    if (torEl.className.includes("status-ok") || torEl.className.includes("status-unknown")) return;
+    try {
+        await api("POST", "/api/tor/retry");
+        torEl.textContent = "Tor …";
+        torEl.className = "status-indicator status-unknown";
+        torEl.title = "Tor is starting…";
+    } catch (err) {
+        showToast("Cannot start Tor: " + err.message);
+    }
 }
 
 // ================================================================
@@ -241,10 +261,21 @@ function handleEvent(event) {
     } else if (event.type === "tor_ready") {
         updateStatus();
         showToast("Tor hidden service active");
+    } else if (event.type === "tor_status") {
+        if (event.status === "error") {
+            updateStatus();
+            showToast("Tor failed to start. Click Tor ✗ to retry.");
+        } else if (event.status === "starting") {
+            updateStatus();
+        }
     } else if (event.type === "delivery_status") {
         // Refresh conversation to show updated status dot (queued → delivered)
         if (currentContact) {
             loadMessages(currentContact);
+        }
+    } else if (event.type === "group_post") {
+        if (currentGroup && event.group_id === currentGroup.id) {
+            loadPosts(currentGroup);
         }
     } else if (event.type === "group_invite") {
         loadGroups();
