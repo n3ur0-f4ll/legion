@@ -28,20 +28,20 @@ o przychodzących wiadomościach i zdarzeniach stanu węzła.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
+import logging
 import time
 from dataclasses import dataclass, field
 from typing import AsyncIterator
 
-import logging
-
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
-
-logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 from core import crypto
 from core.identity import (
