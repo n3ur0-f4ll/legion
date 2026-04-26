@@ -7,7 +7,7 @@
     --border:         #2e2e2e;
     --text-primary:   #e8e8e8;
     --text-secondary: #8a8a8a;
-    --accent:         #4a9eff;
+    --accent:         #2db865;
     --success:        #4caf50;
     --warning:        #ff9800;
     --error:          #f44336;
@@ -356,7 +356,19 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .group-item:hover { background: var(--bg-tertiary); }
 
 .contact-item.active,
-.group-item.active { background: #1a2033; }
+.group-item.active { background: #0d2018; }
+
+.unread-badge {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    flex-shrink: 0;
+    min-width: 18px;
+    text-align: center;
+}
 
 .item-info {
     flex: 1;
@@ -454,8 +466,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .message-bubble.outgoing {
     align-self: flex-end;
-    background: #1a2a40;
-    border: 1px solid #2a3f5f;
+    background: #0d2518;
+    border: 1px solid #1a4530;
 }
 
 .message-bubble.incoming {

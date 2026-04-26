@@ -140,11 +140,14 @@ async function loadContacts() {
             const div = document.createElement("div");
             div.className = "contact-item";
             div.dataset.key = c.public_key;
+            const badge = c.unread_count > 0
+                ? `<span class="unread-badge">${c.unread_count}</span>` : "";
             div.innerHTML = `
                 <div class="item-info">
                     <span class="item-name">${esc(c.alias || "Unknown")}</span>
                     <span class="item-sub">${esc(c.public_key.slice(0, 16))}…</span>
                 </div>
+                ${badge}
                 <button class="btn-delete-item" title="Edit alias">✎</button>
                 <button class="btn-delete-item" title="Remove contact">×</button>
             `;
@@ -248,13 +251,14 @@ function connectSSE() {
     };
 }
 
-function handleEvent(event) {
+async function handleEvent(event) {
     if (event.type === "message") {
-        // If we're viewing this conversation, refresh messages
         if (currentContact && event.from === currentContact.public_key) {
+            // Conversation is open — mark as read immediately, no badge needed
+            try { await api("POST", `/api/messages/${event.from}/read`); } catch (_) {}
             loadMessages(currentContact);
         }
-        loadContacts(); // update sidebar (could have new contact)
+        loadContacts(); // refresh sidebar badges
         if (window.pywebview) {
             window.pywebview.api.show_notification("New message", "You have a new message");
         }
@@ -361,6 +365,9 @@ async function openConversation(contact) {
     document.getElementById("msg-peer-key").textContent = contact.public_key.slice(0, 24) + "…";
 
     showPanel("messages");
+    // Mark incoming messages as read and refresh sidebar badge
+    try { await api("POST", `/api/messages/${contact.public_key}/read`); } catch (_) {}
+    await loadContacts();
     await loadMessages(contact);
 }
 

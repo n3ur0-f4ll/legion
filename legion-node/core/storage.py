@@ -197,7 +197,9 @@ class Database:
         status: str,
     ) -> None:
         await self._conn.execute(
-            "INSERT OR IGNORE INTO messages VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO messages "
+            "(id, from_key, to_key, payload, signature, timestamp, expires_at, status) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (id, from_key, to_key, payload, signature, timestamp, expires_at, status),
         )
         await self._conn.commit()
@@ -224,6 +226,27 @@ class Database:
             "UPDATE messages SET status = ? WHERE id = ?", (status, id)
         )
         await self._conn.commit()
+
+    async def mark_conversation_read(self, peer_key: str, our_key: str) -> None:
+        """Mark all incoming messages from peer_key as read."""
+        import time as _time
+        await self._conn.execute(
+            "UPDATE messages SET read_at = ? "
+            "WHERE from_key = ? AND to_key = ? AND read_at IS NULL",
+            (int(_time.time()), peer_key, our_key),
+        )
+        await self._conn.commit()
+
+    async def get_unread_counts(self, our_key: str) -> dict:
+        """Return {sender_key: count} for unread incoming messages."""
+        async with self._conn.execute(
+            "SELECT from_key, COUNT(*) as cnt FROM messages "
+            "WHERE to_key = ? AND read_at IS NULL "
+            "GROUP BY from_key",
+            (our_key,),
+        ) as cur:
+            rows = await cur.fetchall()
+        return {row["from_key"]: row["cnt"] for row in rows}
 
     async def delete_expired_messages(self, now: int) -> int:
         cur = await self._conn.execute(
@@ -388,11 +411,12 @@ class Database:
 async def _apply_schema(conn: aiosqlite.Connection) -> None:
     sql = _SCHEMA.read_text()
     await conn.executescript(sql)
-    # Migration: add message_json column to delivery_queue (idempotent)
-    try:
-        await conn.execute(
-            "ALTER TABLE delivery_queue ADD COLUMN message_json TEXT NOT NULL DEFAULT ''"
-        )
-        await conn.commit()
-    except Exception:
-        pass  # column already exists
+    for migration in (
+        "ALTER TABLE delivery_queue ADD COLUMN message_json TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE messages ADD COLUMN read_at INTEGER DEFAULT NULL",
+    ):
+        try:
+            await conn.execute(migration)
+            await conn.commit()
+        except Exception:
+            pass  # column already exists

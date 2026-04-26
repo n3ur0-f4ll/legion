@@ -302,7 +302,12 @@ def create_app(state: AppState) -> FastAPI:
 
     @app.get("/api/contacts")
     async def get_contacts(s: AppState = Depends(get_state)):
-        return await s.db.get_contacts()
+        contacts = await s.db.get_contacts()
+        if s.identity:
+            unread = await s.db.get_unread_counts(s.identity.public_key.hex())
+            for c in contacts:
+                c["unread_count"] = unread.get(c["public_key"], 0)
+        return contacts
 
     @app.post("/api/contacts", status_code=201)
     async def add_contact(req: ContactCardRequest, s: AppState = Depends(get_state)):
@@ -343,6 +348,11 @@ def create_app(state: AppState) -> FastAPI:
     # ------------------------------------------------------------------
     # Messages
     # ------------------------------------------------------------------
+
+    @app.post("/api/messages/{public_key}/read", status_code=204)
+    async def mark_read(public_key: str, deps=Depends(require_identity)):
+        s, identity = deps
+        await s.db.mark_conversation_read(public_key, identity.public_key.hex())
 
     @app.get("/api/messages/{public_key}")
     async def get_messages(public_key: str, deps=Depends(require_identity)):

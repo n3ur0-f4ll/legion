@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS messages (
     timestamp       INTEGER NOT NULL,
     expires_at      INTEGER NOT NULL,
     status          TEXT NOT NULL
-        CHECK (status IN ('queued', 'sent', 'delivered', 'failed'))
+        CHECK (status IN ('queued', 'sent', 'delivered', 'failed')),
+    read_at         INTEGER DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS groups (
