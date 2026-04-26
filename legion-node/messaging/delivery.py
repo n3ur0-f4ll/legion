@@ -45,7 +45,7 @@ RETRY_SCHEDULE = [60, 300, 900, 3600, 21600, 86400]
 Sender = Callable[[dict, str], Awaitable[None]]  # (msg_dict, onion_address) -> None
 OnDelivered = Callable[[str], Awaitable[None]]   # (message_id) -> None
 
-_LOOP_INTERVAL = 30  # seconds between queue sweeps
+_LOOP_INTERVAL = 10  # seconds between queue sweeps
 
 
 class DeliveryQueue:

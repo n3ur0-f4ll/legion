@@ -62,13 +62,18 @@ def main() -> None:
     logging.basicConfig(level=logging.WARNING,
                         format="%(levelname)s %(name)s: %(message)s")
 
-    # --- start legion-node as subprocess ---
-    node_proc = _start_node(config.api_port)
-    if not _wait_for_node(config.api_port):
-        if node_proc:
-            node_proc.terminate()
-        print("Error: legion-node failed to start.", file=sys.stderr)
-        sys.exit(1)
+    # --- start legion-node as subprocess (skip if already running) ---
+    if _wait_for_node(config.api_port, timeout=1):
+        # Node already running (stale process or second instance) — attach to it
+        node_proc = None
+        logger.warning("legion-node already running on port %d — attaching", config.api_port)
+    else:
+        node_proc = _start_node(config.api_port)
+        if not _wait_for_node(config.api_port):
+            if node_proc:
+                node_proc.terminate()
+            print("Error: legion-node failed to start.", file=sys.stderr)
+            sys.exit(1)
 
     # --- open GUI window ---
     ui_dir = pathlib.Path(__file__).parent.parent / "ui"
@@ -78,6 +83,23 @@ def main() -> None:
             node_proc.terminate()
         print(f"Error: UI files not found at {ui_dir}", file=sys.stderr)
         sys.exit(1)
+
+    logo = _REPO_ROOT / "img" / "logo.png"
+    icon_arg = str(logo) if logo.exists() else None
+
+    # Set GTK app name BEFORE create_window so compositor knows the app_id
+    try:
+        import gi
+        gi.require_version("Gtk", "3.0")
+        from gi.repository import GLib
+        GLib.set_prgname("legion")
+        GLib.set_application_name("Legion")
+    except Exception:
+        pass
+
+    # Install icon + .desktop BEFORE the window appears so compositor sees it immediately
+    if icon_arg:
+        _install_xdg_resources(icon_arg)
 
     bridge = LegionBridge(api_port=config.api_port)
     window = webview.create_window(
@@ -97,7 +119,22 @@ def main() -> None:
 
     window.events.closed += on_closed
 
-    webview.start(debug=config.debug, http_server=True, gui="gtk")
+    def _apply_gtk_icon():
+        if not icon_arg:
+            return
+        try:
+            import gi
+            gi.require_version("Gtk", "3.0")
+            from gi.repository import Gtk, GdkPixbuf
+            pb = GdkPixbuf.Pixbuf.new_from_file(icon_arg)
+            Gtk.Window.set_default_icon(pb)
+            for win in Gtk.Window.list_toplevels():
+                win.set_icon(pb)
+        except Exception:
+            pass
+
+    webview.start(debug=config.debug, http_server=True, gui="gtk",
+                  icon=icon_arg, func=_apply_gtk_icon)
 
     # webview.start() returned — window is closed.
     # Wait for node to finish cleanly, then force-exit.
@@ -113,6 +150,49 @@ def main() -> None:
     os._exit(0)
 
 
+def _install_xdg_resources(icon_path: str) -> None:
+    """Install icon and .desktop file to ~/.local/share (user-level, no root).
+
+    Idempotent — safe to call on every launch.
+    Required for Wayland compositor to show the correct taskbar icon.
+    """
+    import shutil
+    import subprocess as _sp
+
+    home = pathlib.Path.home()
+
+    # Icon — install to hicolor theme at 256x256 (standard size for 1024x1024 source)
+    icon_dir = home / ".local/share/icons/hicolor/256x256/apps"
+    icon_dir.mkdir(parents=True, exist_ok=True)
+    dest_icon = icon_dir / "legion.png"
+    try:
+        shutil.copy2(icon_path, dest_icon)
+        _sp.run(
+            ["gtk-update-icon-cache", "-f", "-t",
+             str(home / ".local/share/icons/hicolor")],
+            capture_output=True,
+        )
+    except Exception:
+        pass
+
+    # .desktop file — links app_id "legion" to icon and executable
+    apps_dir = home / ".local/share/applications"
+    apps_dir.mkdir(parents=True, exist_ok=True)
+    desktop = apps_dir / "legion.desktop"
+    executable = str(pathlib.Path(__file__).resolve())
+    desktop.write_text(
+        f"[Desktop Entry]\n"
+        f"Name=Legion\n"
+        f"Comment=Decentralized anonymous communication over Tor\n"
+        f"Exec={sys.executable} {executable}\n"
+        f"Icon=legion\n"
+        f"Type=Application\n"
+        f"Categories=Network;InstantMessaging;\n"
+        f"StartupWMClass=legion\n",
+        encoding="utf-8",
+    )
+
+
 def _start_node(api_port: int) -> subprocess.Popen | None:
     if not _NODE_MAIN.exists():
         logger.warning("legion-node not found at %s", _NODE_MAIN)
@@ -124,7 +204,7 @@ def _start_node(api_port: int) -> subprocess.Popen | None:
     )
 
 
-def _wait_for_node(api_port: int, timeout: int = 30) -> bool:
+def _wait_for_node(api_port: int, timeout: float = 30) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:

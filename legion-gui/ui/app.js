@@ -409,8 +409,23 @@ async function loadMessages(contact) {
             `;
             list.appendChild(bubble);
         });
-        list.scrollTop = list.scrollHeight;
+        _scrollToBottom(list);
     } catch (_) {}
+}
+
+function _scrollToBottom(list) {
+    const imgs = list.querySelectorAll("img");
+    if (!imgs.length) {
+        list.scrollTop = list.scrollHeight;
+        return;
+    }
+    let pending = imgs.length;
+    const done = () => { if (--pending === 0) list.scrollTop = list.scrollHeight; };
+    imgs.forEach(img => {
+        if (img.complete) done();
+        else { img.addEventListener("load", done, { once: true });
+               img.addEventListener("error", done, { once: true }); }
+    });
 }
 
 async function sendMessage() {
@@ -547,7 +562,7 @@ async function loadPosts(group) {
             `;
             list.appendChild(bubble);
         });
-        list.scrollTop = list.scrollHeight;
+        _scrollToBottom(list);
     } catch (_) {}
 }
 
