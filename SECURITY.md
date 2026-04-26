@@ -81,7 +81,11 @@ dodatkowa warstwa ochrony w przypadku kradzieży urządzenia.
 
 ## Bezpieczeństwo plików i obrazów
 
-Każdy plik i obraz przechodzi przez **dwustronną sanityzację**:
+Pliki i obrazy są szyfrowane **tym samym algorytmem co wiadomości tekstowe**
+(X25519 + XSalsa20-Poly1305). Plik jest traktowany jak ciąg bajtów — kryptografia
+nie rozróżnia czy szyfruje tekst, zdjęcie czy dokument PDF.
+
+Dodatkowo każdy plik przechodzi przez **dwustronną sanityzację**:
 
 ### Po stronie nadawcy (przed wysłaniem)
 
