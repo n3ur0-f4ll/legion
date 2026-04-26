@@ -59,6 +59,7 @@ from core.protocol import (
 from core.storage import Database
 from messaging import private, groups
 from messaging.delivery import DeliveryQueue
+from messaging.files import FileError
 from network.relay import choose_destination
 
 
@@ -122,9 +123,12 @@ class ContactCardRequest(BaseModel):
 
 
 class SendMessageRequest(BaseModel):
-    to: str        # hex public key of recipient
-    text: str
-    onion: str     # recipient's .onion address
+    to: str           # hex public key of recipient
+    onion: str        # recipient's .onion address
+    text: str | None = None
+    file_data: str | None = None   # base64-encoded file bytes
+    file_name: str | None = None
+    mime_type: str | None = None
 
 
 class CreateGroupRequest(BaseModel):
@@ -370,7 +374,20 @@ def create_app(state: AppState) -> FastAPI:
         except ValueError:
             raise HTTPException(status_code=422, detail="Invalid public key")
 
-        msg = await private.send(s.db, identity, recipient_key, req.text)
+        if req.file_data is not None:
+            if not req.file_name or not req.mime_type:
+                raise HTTPException(status_code=422, detail="file_name and mime_type required")
+            try:
+                file_bytes = base64.b64decode(req.file_data)
+                msg = await private.send_file(
+                    s.db, identity, recipient_key,
+                    file_bytes, req.file_name, req.mime_type,
+                )
+            except FileError as exc:
+                raise HTTPException(status_code=422, detail=str(exc))
+        else:
+            msg = await private.send(s.db, identity, recipient_key, req.text or "")
+
         destination_onion, via_relay = await choose_destination(s.db, req.onion)
         await s.delivery_queue.enqueue(msg, destination_onion, via_relay=via_relay)
         return {"id": msg["id"], "status": "queued"}
@@ -582,20 +599,29 @@ def _group_safe(group: dict) -> dict:
 
 
 def _decrypt_message(row: dict, identity) -> dict:
-    """Add decrypted 'text' field to a message row. Sets text=None on failure."""
+    """Decrypt message payload, return text or file_data in result dict."""
+    import json as _json
     result = dict(row)
+    result.pop("payload", None)
+    result.pop("signature", None)
+    result["text"] = None
+    result["file_data"] = None
+
     try:
         our_hex = identity.public_key.hex()
         peer_hex = row["from_key"] if row["from_key"] != our_hex else row["to_key"]
-        peer_key = bytes.fromhex(peer_hex)
-        result["text"] = crypto.decrypt(
-            identity.private_key, peer_key, row["payload"]
-        ).decode()
+        raw = crypto.decrypt(identity.private_key, bytes.fromhex(peer_hex), row["payload"])
+        try:
+            envelope = _json.loads(raw)
+            if "f" in envelope:
+                result["file_data"] = envelope["f"]   # base64
+            else:
+                result["text"] = envelope.get("t", "")
+        except Exception:
+            result["text"] = raw.decode(errors="replace")  # legacy
     except Exception:
         result["text"] = None
-    # Never expose raw payload bytes to the GUI
-    result.pop("payload", None)
-    result.pop("signature", None)
+
     return result
 
 

@@ -66,6 +66,7 @@ class DeliveryQueue:
         self._on_delivered = on_delivered
         self._task: asyncio.Task | None = None
         self._running = False
+        self._wake = asyncio.Event()  # set when a new message is enqueued
 
     # ------------------------------------------------------------------
     # public API
@@ -87,6 +88,7 @@ class DeliveryQueue:
             message_json=json.dumps(msg),
             via_relay=via_relay,
         )
+        self._wake.set()  # wake delivery loop immediately
 
     async def process_due(self, now: int | None = None) -> tuple[int, int]:
         """Attempt delivery of all due queue entries.
@@ -137,7 +139,12 @@ class DeliveryQueue:
                     logger.debug("Delivery sweep: sent=%d failed=%d", sent, failed)
             except Exception:
                 logger.exception("Unexpected error in delivery loop")
-            await asyncio.sleep(_LOOP_INTERVAL)
+            # Sleep until timeout OR woken by a new enqueue()
+            self._wake.clear()
+            try:
+                await asyncio.wait_for(self._wake.wait(), timeout=_LOOP_INTERVAL)
+            except asyncio.TimeoutError:
+                pass
 
     async def _try_deliver(self, entry: dict, now: int) -> bool | None:
         """Attempt delivery of one queue entry.

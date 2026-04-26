@@ -19,6 +19,10 @@
 """Konfiguracja legion-gui."""
 
 from dataclasses import dataclass
+import pathlib
+
+_VERSION_FILE = pathlib.Path(__file__).parent.parent / "VERSION"
+VERSION = _VERSION_FILE.read_text().strip() if _VERSION_FILE.exists() else "0.0.0"
 
 
 @dataclass

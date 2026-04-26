@@ -23,6 +23,9 @@ httpx>=0.28        # testowanie API (httpx.AsyncClient)
 # Baza danych
 aiosqlite>=0.20
 
+# Sanityzacja plików i obrazów (stripping metadanych EXIF/GPS/XMP)
+pillow>=10.0
+
 # GUI
 pywebview>=5.0     # GTK backend — po instalacji wykonaj:
                    #   sudo pacman -S python-gobject webkit2gtk-4.1

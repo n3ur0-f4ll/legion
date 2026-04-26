@@ -89,7 +89,8 @@ async def _sent_msg(db):
 
 async def test_receive_returns_plaintext(db):
     msg = await _sent_msg(db)
-    plaintext = await receive(db, BOB, msg)
+    payload = await receive(db, BOB, msg)
+    plaintext = payload.get("t", "")
     assert plaintext == "hello from alice"
 
 
@@ -109,13 +110,15 @@ async def test_receive_wrong_recipient_raises(db):
 
 async def test_receive_unicode_content(db):
     msg = await send(db, ALICE, BOB.public_key, "zażółć gęślą jaźń 🔐")
-    plaintext = await receive(db, BOB, msg)
+    payload = await receive(db, BOB, msg)
+    plaintext = payload.get("t", "")
     assert plaintext == "zażółć gęślą jaźń 🔐"
 
 
 async def test_receive_empty_message(db):
     msg = await send(db, ALICE, BOB.public_key, "")
-    plaintext = await receive(db, BOB, msg)
+    payload = await receive(db, BOB, msg)
+    plaintext = payload.get("t", "")
     assert plaintext == ""
 
 
@@ -133,13 +136,15 @@ async def test_receive_does_not_duplicate_on_second_call(db):
 
 async def test_roundtrip_alice_to_bob(db):
     msg = await send(db, ALICE, BOB.public_key, "secure message")
-    plaintext = await receive(db, BOB, msg)
+    payload = await receive(db, BOB, msg)
+    plaintext = payload.get("t", "")
     assert plaintext == "secure message"
 
 
 async def test_roundtrip_bob_to_alice(db):
     msg = await send(db, BOB, ALICE.public_key, "reply from bob")
-    plaintext = await receive(db, ALICE, msg)
+    payload = await receive(db, ALICE, msg)
+    plaintext = payload.get("t", "")
     assert plaintext == "reply from bob"
 
 

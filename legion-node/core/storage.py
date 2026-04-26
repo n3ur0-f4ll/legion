@@ -195,12 +195,16 @@ class Database:
         timestamp: int,
         expires_at: int,
         status: str,
+        file_name: str | None = None,
+        mime_type: str | None = None,
     ) -> None:
         await self._conn.execute(
             "INSERT OR IGNORE INTO messages "
-            "(id, from_key, to_key, payload, signature, timestamp, expires_at, status) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (id, from_key, to_key, payload, signature, timestamp, expires_at, status),
+            "(id, from_key, to_key, payload, signature, timestamp, expires_at, status, "
+            "file_name, mime_type) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (id, from_key, to_key, payload, signature, timestamp, expires_at, status,
+             file_name, mime_type),
         )
         await self._conn.commit()
 
@@ -414,6 +418,8 @@ async def _apply_schema(conn: aiosqlite.Connection) -> None:
     for migration in (
         "ALTER TABLE delivery_queue ADD COLUMN message_json TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE messages ADD COLUMN read_at INTEGER DEFAULT NULL",
+        "ALTER TABLE messages ADD COLUMN file_name TEXT DEFAULT NULL",
+        "ALTER TABLE messages ADD COLUMN mime_type TEXT DEFAULT NULL",
     ):
         try:
             await conn.execute(migration)

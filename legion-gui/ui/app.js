@@ -10,6 +10,7 @@ let currentContact = null;    // { public_key, alias, onion_address }
 let currentGroup = null;      // { id, name, is_admin }
 let eventSource = null;
 let refreshTimer = null;
+let pendingFile = null;       // { data: base64, name, mime } | null
 
 // ================================================================
 // Initialisation
@@ -28,6 +29,9 @@ async function boot() {
     try {
         if (window.pywebview && window.pywebview.api) {
             API_PORT = await window.pywebview.api.get_api_port();
+            const ver = await window.pywebview.api.get_version();
+            const el = document.getElementById("version-label");
+            if (el) el.textContent = "v" + ver;
         }
     } catch (_) { /* use default */ }
     await initApp();
@@ -381,13 +385,25 @@ async function loadMessages(contact) {
             const bubble = document.createElement("div");
             bubble.className = `message-bubble ${isOutgoing ? "outgoing" : "incoming"}`;
             const ts = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
-            const text = msg.text != null ? esc(msg.text) : '<em style="opacity:.5">[encrypted]</em>';
+            const statusIcon = { queued: '…', sent: '→', delivered: '✓', failed: '✗' };
+            const icon = isOutgoing ? `<span class="status-icon ${msg.status}" title="${msg.status}">${statusIcon[msg.status] || ''}</span>` : '';
+
+            let content;
+            if (msg.file_data && msg.mime_type) {
+                const dataUrl = `data:${msg.mime_type};base64,${msg.file_data}`;
+                if (msg.mime_type.startsWith("image/")) {
+                    content = `<img class="msg-image" src="${dataUrl}" alt="${esc(msg.file_name || 'image')}" onclick="window.open(this.src)">`;
+                } else {
+                    const size = Math.round(atob(msg.file_data).length / 1024);
+                    content = `<a class="msg-file-link" href="${dataUrl}" download="${esc(msg.file_name || 'file')}">📄 ${esc(msg.file_name || 'file')} (${size} KB)</a>`;
+                }
+            } else {
+                content = msg.text != null ? esc(msg.text) : '<em style="opacity:.5">[encrypted]</em>';
+            }
+
             bubble.innerHTML = `
-                <div class="message-text">${text}</div>
-                <div class="message-meta">
-                    <span>${ts}</span>
-                    <span class="status-dot ${msg.status}" title="${msg.status}"></span>
-                </div>
+                <div class="message-text">${content}</div>
+                <div class="message-meta"><span>${ts}</span>${icon}</div>
             `;
             list.appendChild(bubble);
         });
@@ -399,21 +415,53 @@ async function sendMessage() {
     if (!currentContact || !identity) return;
     const input = document.getElementById("msg-input");
     const text = input.value.trim();
-    if (!text) return;
+    if (!text && !pendingFile) return;
 
     input.value = "";
     input.style.height = "auto";
 
     try {
-        await api("POST", "/api/messages", {
-            to: currentContact.public_key,
-            text,
-            onion: currentContact.onion_address,
-        });
+        const body = { to: currentContact.public_key, onion: currentContact.onion_address };
+        if (pendingFile) {
+            body.file_data = pendingFile.data;
+            body.file_name = pendingFile.name;
+            body.mime_type = pendingFile.mime;
+            if (text) body.text = text;
+            clearFileSelection();
+        } else {
+            body.text = text;
+        }
+        await api("POST", "/api/messages", body);
         await loadMessages(currentContact);
     } catch (err) {
         showToast("Failed to send: " + err.message);
     }
+}
+
+function handleFileSelected(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const MAX = 5 * 1024 * 1024;
+    if (file.size > MAX) {
+        showToast("File too large (max 5 MB)");
+        input.value = "";
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const base64 = e.target.result.split(",")[1];
+        pendingFile = { data: base64, name: file.name, mime: file.type || "application/octet-stream" };
+        document.getElementById("file-preview-name").textContent = `📎 ${file.name}`;
+        document.getElementById("file-preview").classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+    input.value = "";
+}
+
+function clearFileSelection() {
+    pendingFile = null;
+    document.getElementById("file-preview").classList.add("hidden");
+    document.getElementById("file-preview-name").textContent = "";
 }
 
 function handleMsgKey(e) {

@@ -401,7 +401,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     padding: 8px;
     border-top: 1px solid var(--border);
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.version-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    user-select: none;
+    padding-left: 4px;
 }
 
 /* ----------------------------------------------------------------
@@ -485,17 +494,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     align-items: center;
 }
 
-.status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    display: inline-block;
+.status-icon {
+    font-size: 11px;
+    line-height: 1;
 }
 
-.status-dot.queued   { background: var(--text-secondary); }
-.status-dot.sent     { background: var(--warning); }
-.status-dot.delivered{ background: var(--success); }
-.status-dot.failed   { background: var(--error); }
+.status-icon.queued   { color: var(--text-secondary); }
+.status-icon.sent     { color: var(--warning); }
+.status-icon.delivered{ color: var(--accent); }
+.status-icon.failed   { color: var(--error); }
 
 .message-input-row {
     padding: 10px 12px;
@@ -512,6 +519,43 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     max-height: 120px;
     overflow-y: auto;
 }
+
+.btn-attach {
+    font-size: 16px;
+    cursor: pointer;
+    padding: 6px 4px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    line-height: 1;
+}
+.btn-attach:hover { color: var(--accent); }
+
+.file-preview {
+    padding: 4px 12px 6px;
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px dashed var(--border);
+}
+
+.msg-image {
+    max-width: 280px;
+    max-height: 200px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: block;
+    margin-top: 4px;
+}
+
+.msg-file-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 12px;
+}
+.msg-file-link:hover { text-decoration: underline; }
 
 /* ----------------------------------------------------------------
    Settings

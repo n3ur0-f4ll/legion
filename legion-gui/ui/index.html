@@ -94,6 +94,7 @@
             </div>
 
             <div id="sidebar-bottom">
+                <span id="version-label" class="version-label"></span>
                 <button class="btn-icon" onclick="showSettings()" title="Settings">⚙</button>
             </div>
         </nav>
@@ -118,7 +119,14 @@
                 <div class="message-input-row">
                     <textarea id="msg-input" placeholder="Write a message…" rows="1"
                         onkeydown="handleMsgKey(event)"></textarea>
+                    <label class="btn-attach" title="Attach file (max 5 MB)">
+                        📎<input id="msg-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/zip" style="display:none" onchange="handleFileSelected(this)">
+                    </label>
                     <button class="btn-send" onclick="sendMessage()">Send</button>
+                </div>
+                <div id="file-preview" class="file-preview hidden">
+                    <span id="file-preview-name"></span>
+                    <button onclick="clearFileSelection()" style="background:transparent;color:var(--text-secondary);border:none;cursor:pointer;font-size:14px">×</button>
                 </div>
             </div>
 

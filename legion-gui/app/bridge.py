@@ -41,6 +41,11 @@ class LegionBridge:
         """Return the port on which legion-node API is listening."""
         return self._api_port
 
+    def get_version(self) -> str:
+        """Return application version string."""
+        from config import VERSION
+        return VERSION
+
     def copy_to_clipboard(self, text: str) -> bool:
         """Copy text to system clipboard. Returns True on success."""
         import os
