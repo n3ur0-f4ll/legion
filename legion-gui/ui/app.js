@@ -12,6 +12,12 @@ let eventSource = null;
 let refreshTimer = null;
 let pendingFile = null;       // { data: base64, name, mime } | null
 
+// Network log state
+const NET_LOG_MAX = 200;
+let networkLog = [];          // ring buffer of log entries
+let netFilter = "all";        // "all" | "tor" | "msg"
+let netLogAutoScroll = true;  // auto-scroll unless user scrolled up
+
 // ================================================================
 // Initialisation
 // ================================================================
@@ -115,6 +121,17 @@ function switchTab(tab) {
     document.getElementById(`tab-${tab}`).classList.add("active");
     document.getElementById("contacts-panel").classList.toggle("hidden", tab !== "contacts");
     document.getElementById("groups-panel").classList.toggle("hidden", tab !== "groups");
+    document.getElementById("network-panel").classList.toggle("hidden", tab !== "network");
+
+    if (tab === "network") {
+        showPanel("network");
+        renderNetLog();
+    } else {
+        // Restore the relevant main panel when leaving Network tab
+        if (currentContact) showPanel("messages");
+        else if (currentGroup) showPanel("group");
+        else showPanel("welcome");
+    }
 }
 
 // ================================================================
@@ -288,6 +305,13 @@ async function handleEvent(event) {
     } else if (event.type === "group_invite") {
         loadGroups();
         showToast("You were invited to a group");
+    } else if (event.type === "network_log") {
+        if (event.level === "bw") {
+            const parts = event.text.split(":");
+            _updateBw(parseInt(parts[0], 10) || 0, parseInt(parts[1], 10) || 0);
+        } else {
+            appendNetLog(event);
+        }
     }
 }
 
@@ -900,6 +924,98 @@ function copyToClipboard(text, successMsg = "Copied") {
     }
 }
 
+// ================================================================
+// Network log
+// ================================================================
+
+document.getElementById("network-log-area").addEventListener("scroll", () => {
+    const el = document.getElementById("network-log-area");
+    netLogAutoScroll = (el.scrollHeight - el.scrollTop - el.clientHeight) < 40;
+});
+
+function setNetFilter(f) {
+    netFilter = f;
+    ["all", "tor", "msg"].forEach(id => {
+        document.getElementById(`nf-${id}`).classList.toggle("active", id === f);
+    });
+    renderNetLog();
+}
+
+function _matchesFilter(entry) {
+    if (netFilter === "all") return true;
+    if (netFilter === "tor") return entry.category === "tor";
+    if (netFilter === "msg") return entry.category === "msg" || entry.category === "delivery";
+    return true;
+}
+
+function _fmtTs(ts) {
+    return new Date(ts * 1000).toLocaleTimeString([], {
+        hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit"
+    });
+}
+
+function _fmtBytes(n) {
+    if (!n) return "0 B/s";
+    if (n < 1024) return n + " B/s";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB/s";
+    return (n / 1024 / 1024).toFixed(2) + " MB/s";
+}
+
+function _buildLogEntryEl(entry) {
+    const div = document.createElement("div");
+    const isMsg = entry.category === "msg" || entry.category === "delivery";
+    div.className = "log-entry " + (isMsg ? "log-msg" : (entry.level || "info"));
+
+    const ts = document.createElement("span");
+    ts.className = "log-ts";
+    ts.textContent = _fmtTs(entry.ts);
+
+    const text = document.createElement("span");
+    text.className = "log-text";
+    text.textContent = entry.text;   // textContent — no XSS risk
+
+    div.appendChild(ts);
+    div.appendChild(text);
+    return div;
+}
+
+function appendNetLog(entry) {
+    networkLog.push(entry);
+    if (networkLog.length > NET_LOG_MAX) networkLog.shift();
+
+    const panel = document.getElementById("panel-network");
+    if (panel.classList.contains("hidden")) return;
+    if (!_matchesFilter(entry)) return;
+
+    const area = document.getElementById("network-log-area");
+    area.appendChild(_buildLogEntryEl(entry));
+    if (netLogAutoScroll) area.scrollTop = area.scrollHeight;
+}
+
+function renderNetLog() {
+    const area = document.getElementById("network-log-area");
+    const frag = document.createDocumentFragment();
+    networkLog.filter(_matchesFilter).forEach(e => frag.appendChild(_buildLogEntryEl(e)));
+    area.innerHTML = "";
+    area.appendChild(frag);
+    area.scrollTop = area.scrollHeight;
+    netLogAutoScroll = true;
+}
+
+function clearNetLog() {
+    networkLog = [];
+    document.getElementById("network-log-area").innerHTML = "";
+}
+
+function _updateBw(read, written) {
+    const el = document.getElementById("bw-display");
+    if (!el) return;
+    el.innerHTML =
+        `<span class="bw-up">↑ ${_fmtBytes(written)}</span>` +
+        `<span class="bw-dn">↓ ${_fmtBytes(read)}</span>`;
+}
+
+// ================================================================
 // Close modals on backdrop click
 document.querySelectorAll(".modal").forEach(modal => {
     modal.addEventListener("click", (e) => {

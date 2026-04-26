@@ -81,6 +81,7 @@
             <div class="sidebar-tabs">
                 <button class="tab-btn active" id="tab-contacts" onclick="switchTab('contacts')">Contacts</button>
                 <button class="tab-btn" id="tab-groups" onclick="switchTab('groups')">Groups</button>
+                <button class="tab-btn" id="tab-network" onclick="switchTab('network')">Network</button>
             </div>
 
             <!-- Contacts list -->
@@ -93,6 +94,15 @@
             <div id="groups-panel" class="sidebar-list hidden">
                 <div id="groups-list"></div>
                 <button class="btn-add" onclick="showCreateGroup()">+ New group</button>
+            </div>
+
+            <!-- Network panel (sidebar) -->
+            <div id="network-panel" class="sidebar-list hidden">
+                <div class="bw-display" id="bw-display">
+                    <span class="bw-up">↑ –</span>
+                    <span class="bw-dn">↓ –</span>
+                </div>
+                <div class="bw-hint">Tor bandwidth (live)</div>
             </div>
 
             <div id="sidebar-bottom">
@@ -146,6 +156,20 @@
                         onkeydown="handlePostKey(event)"></textarea>
                     <button class="btn-send" onclick="sendPost()">Post</button>
                 </div>
+            </div>
+
+            <!-- Network log panel -->
+            <div id="panel-network" class="panel hidden">
+                <div class="panel-header">
+                    <span class="panel-title">Network Log</span>
+                    <div class="net-filter-bar">
+                        <button class="net-filter-btn active" id="nf-all" onclick="setNetFilter('all')">All</button>
+                        <button class="net-filter-btn" id="nf-tor" onclick="setNetFilter('tor')">Tor</button>
+                        <button class="net-filter-btn" id="nf-msg" onclick="setNetFilter('msg')">Messages</button>
+                        <button class="net-filter-btn net-filter-clear" onclick="clearNetLog()">Clear</button>
+                    </div>
+                </div>
+                <div id="network-log-area" class="log-area"></div>
             </div>
 
             <!-- Settings panel -->

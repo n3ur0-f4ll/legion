@@ -34,7 +34,7 @@ import hashlib
 import logging
 import pathlib
 import time
-from typing import Any
+from typing import Any, Callable
 
 import stem.control
 import stem.process
@@ -42,6 +42,28 @@ import stem.process
 logger = logging.getLogger(__name__)
 
 _BOOTSTRAP_TIMEOUT = 120  # seconds
+
+LogCallback = Callable[[str, str, str], None]  # (level, category, text)
+
+# HS-related circuit purposes worth surfacing to the user
+_HS_PURPOSES = frozenset({
+    "HS_SERVICE_INTRO", "HS_SERVICE_REND",
+    "HS_CLIENT_INTRO", "HS_CLIENT_REND",
+    "HS_VANGUARDS",
+})
+_PURPOSE_LABEL: dict[str, str] = {
+    "HS_SERVICE_INTRO": "HS intro",
+    "HS_SERVICE_REND": "HS rend",
+    "HS_CLIENT_INTRO": "client intro",
+    "HS_CLIENT_REND": "client rend",
+    "HS_VANGUARDS": "vanguard",
+}
+_STATUS_CLIENT_MAP: dict[str, tuple[str, str]] = {
+    "ENOUGH_DIR_INFO":        ("info", "Tor: sufficient directory info"),
+    "NOT_ENOUGH_DIR_INFO":    ("warn", "Tor: waiting for directory info"),
+    "CIRCUIT_ESTABLISHED":    ("info", "Tor: all circuits established"),
+    "CIRCUIT_NOT_ESTABLISHED":("warn", "Tor: circuits not yet established"),
+}
 
 
 class TorError(Exception):
@@ -63,6 +85,7 @@ class TorManager:
         self._process: Any = None
         self._controller: stem.control.Controller | None = None
         self._onion_address: str | None = None
+        self._log_cb: LogCallback | None = None
 
     @property
     def onion_address(self) -> str:
@@ -140,6 +163,71 @@ class TorManager:
             self._process = None
 
         self._onion_address = None
+
+    def attach_log_listener(self, callback: LogCallback) -> None:
+        """Register Stem event listeners after start() succeeds.
+
+        callback is called from Stem's event thread — the caller must wrap it
+        with loop.call_soon_threadsafe() if pushing to asyncio queues.
+        """
+        if self._controller is None:
+            return
+        self._log_cb = callback
+        try:
+            self._controller.add_event_listener(
+                self._on_circ, stem.control.EventType.CIRC
+            )
+            self._controller.add_event_listener(
+                self._on_bw, stem.control.EventType.BW
+            )
+            self._controller.add_event_listener(
+                self._on_status, stem.control.EventType.STATUS_CLIENT
+            )
+            self._controller.add_event_listener(
+                self._on_warn,
+                stem.control.EventType.WARN,
+                stem.control.EventType.ERR,
+            )
+        except Exception as exc:
+            logger.warning("Could not attach Tor event listeners: %s", exc)
+
+    # ------------------------------------------------------------------
+    # Stem event handlers — called from Stem's event thread
+    # ------------------------------------------------------------------
+
+    def _on_circ(self, event) -> None:
+        if self._log_cb is None:
+            return
+        purpose = str(event.purpose) if event.purpose else "GENERAL"
+        status = str(event.status) if event.status else ""
+        if status == "BUILT" and purpose in _HS_PURPOSES:
+            label = _PURPOSE_LABEL.get(purpose, purpose)
+            self._log_cb("info", "tor", f"Circuit #{event.id} [{label}] established")
+        elif status == "FAILED":
+            reason = str(event.reason) if getattr(event, "reason", None) else ""
+            label = _PURPOSE_LABEL.get(purpose, purpose.lower())
+            tail = f": {reason}" if reason and reason != "NONE" else ""
+            self._log_cb("warn", "tor", f"Circuit #{event.id} [{label}] failed{tail}")
+
+    def _on_bw(self, event) -> None:
+        if self._log_cb is not None:
+            self._log_cb("bw", "tor", f"{event.read}:{event.written}")
+
+    def _on_status(self, event) -> None:
+        if self._log_cb is None:
+            return
+        action = str(event.action) if event.action else ""
+        if action in _STATUS_CLIENT_MAP:
+            level, text = _STATUS_CLIENT_MAP[action]
+            self._log_cb(level, "tor", text)
+
+    def _on_warn(self, event) -> None:
+        if self._log_cb is None:
+            return
+        msg = getattr(event, "message", None) or str(event)
+        etype = str(getattr(event, "type", "WARN")).upper()
+        level = "error" if etype == "ERR" else "warn"
+        self._log_cb(level, "tor", f"Tor: {msg}")
 
     # ------------------------------------------------------------------
     # internal — broken out for testability

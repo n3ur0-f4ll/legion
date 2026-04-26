@@ -32,6 +32,7 @@ import base64
 import json
 import logging
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from typing import AsyncIterator
 
@@ -80,10 +81,25 @@ class AppState:
     _tor_starting: bool = False
     tor_error: str = ""
     _event_queues: list[asyncio.Queue] = field(default_factory=list)
+    _log_ring: deque = field(default_factory=lambda: deque(maxlen=200))
 
     async def on_message_delivered(self, message_id: str) -> None:
         """Called by DeliveryQueue when a message is successfully delivered."""
         self.push_event("delivery_status", {"id": message_id, "status": "delivered"})
+        self.push_network_log("info", "delivery", f"✓ Delivered {message_id[:8]}…")
+
+    def push_network_log(self, level: str, category: str, text: str) -> None:
+        """Push a network log entry to all SSE subscribers and the ring buffer.
+
+        level: info | warn | error | msg | bw
+        category: tor | msg | delivery
+        Bandwidth events (level='bw') are streamed but not persisted in the ring.
+        """
+        ts = int(time.time())
+        data = {"level": level, "category": category, "text": text, "ts": ts}
+        if level != "bw":
+            self._log_ring.append({"type": "network_log", **data})
+        self.push_event("network_log", data)
 
     def push_event(self, event_type: str, data: dict) -> None:
         payload = {"type": event_type, **data}
@@ -166,15 +182,24 @@ async def _start_tor_background(state: AppState) -> None:
     state._tor_starting = True
     state.tor_error = ""
     state.push_event("tor_status", {"status": "starting"})
+    state.push_network_log("info", "tor", "Starting Tor hidden service…")
     try:
         onion = await tm.start(state.identity.private_key, hs_port=state.node_port)
         state.tor_onion = onion
         logger.info("Hidden service started: %s", onion)
         state.push_event("tor_ready", {"onion_address": onion})
+        state.push_network_log("info", "tor", f"Hidden service online: {onion}")
+        # Attach Stem event listener — callbacks run in Stem's thread, so we
+        # wrap with call_soon_threadsafe to safely push into asyncio queues.
+        loop = asyncio.get_running_loop()
+        def _threadsafe_log(level: str, category: str, text: str) -> None:
+            loop.call_soon_threadsafe(state.push_network_log, level, category, text)
+        tm.attach_log_listener(_threadsafe_log)
     except Exception as exc:
         state.tor_error = str(exc)
         logger.error("Tor start failed: %s", exc)
         state.push_event("tor_status", {"status": "error", "error": str(exc)})
+        state.push_network_log("error", "tor", f"Tor failed to start: {exc}")
     finally:
         state._tor_starting = False
 
@@ -503,6 +528,10 @@ def create_app(state: AppState) -> FastAPI:
         async def stream() -> AsyncIterator[str]:
             q = s._add_event_queue()
             try:
+                # Backfill: replay log history so a newly opened Network tab
+                # shows events that happened before the SSE connection was made.
+                for entry in list(s._log_ring):
+                    yield f"data: {json.dumps(entry)}\n\n"
                 while True:
                     event = await q.get()
                     yield f"data: {json.dumps(event)}\n\n"
@@ -543,6 +572,7 @@ def make_message_handler(state: AppState):
             try:
                 await private.receive(state.db, state.identity, msg)
                 state.push_event("message", {"from": sender, "id": msg["id"]})
+                state.push_network_log("msg", "msg", f"← Message from {sender[:8]}…")
             except Exception:
                 pass
 
@@ -552,6 +582,7 @@ def make_message_handler(state: AppState):
             try:
                 group = await groups.accept_invite(state.db, state.identity, msg)
                 state.push_event("group_invite", {"group_id": group["id"]})
+                state.push_network_log("msg", "msg", f"← Group invite from {sender[:8]}…")
             except Exception:
                 pass
 
@@ -566,6 +597,7 @@ def make_message_handler(state: AppState):
                     "from": sender,
                     "id": msg["id"],
                 })
+                state.push_network_log("msg", "msg", f"← Post in group {group_id[:8]}…")
             except Exception:
                 pass
 
