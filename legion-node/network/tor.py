@@ -88,7 +88,7 @@ class TorManager:
         Raises TorError on any failure.
         """
         self._data_dir.mkdir(parents=True, exist_ok=True)
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         try:
             self._process = await asyncio.wait_for(

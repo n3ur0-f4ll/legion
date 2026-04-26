@@ -95,13 +95,13 @@ def sanitize_incoming(data: bytes, mime_type: str) -> bytes:
 
 async def prepare_outgoing_async(data: bytes, file_name: str, mime_type: str) -> bytes:
     """Async wrapper — runs PIL in executor to avoid blocking the event loop."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, prepare_outgoing, data, file_name, mime_type)
 
 
 async def sanitize_incoming_async(data: bytes, mime_type: str) -> bytes:
     """Async wrapper — runs PIL in executor to avoid blocking the event loop."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, sanitize_incoming, data, mime_type)
 
 

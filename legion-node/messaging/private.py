@@ -178,6 +178,8 @@ async def receive(
         file_name=file_name,
         mime_type=mime_type,
     )
+    # INSERT OR IGNORE won't update an existing row (e.g. sender's own outgoing message),
+    # so we always force the status to "delivered" with an explicit UPDATE.
     await db.update_message_status(msg["id"], "delivered")
     return payload
 

@@ -62,7 +62,7 @@ async def send_message(
     onion_address: full '<id>.onion' address of the destination node.
     Raises NodeClientError on any connection or send failure.
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     try:
         sock = await asyncio.wait_for(

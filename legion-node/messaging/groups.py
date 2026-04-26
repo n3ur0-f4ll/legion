@@ -213,7 +213,7 @@ async def post(
     msg = build_message(
         type=MSG_GROUP_POST,
         from_key=identity.public_key,
-        to_key=bytes.fromhex(group_id) if len(group_id) == 64 else _group_id_bytes(group_id),
+        to_key=bytes.fromhex(group_id),
         payload=ciphertext,
         private_key=identity.private_key,
         ttl=ttl,

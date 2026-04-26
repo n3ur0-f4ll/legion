@@ -169,6 +169,9 @@ def validate_message(msg: dict[str, Any], now: int | None = None) -> None:
     except (TypeError, ValueError) as exc:
         raise MalformedMessage(f"Invalid ttl/timestamp: {exc}") from exc
 
+    _CLOCK_SKEW = 300  # accept up to 5 minutes of clock drift
+    if timestamp > now + _CLOCK_SKEW:
+        raise ExpiredMessage("Message has a future timestamp")
     if now - timestamp > ttl:
         raise ExpiredMessage(f"Message expired (age={now - timestamp}s, ttl={ttl}s)")
 

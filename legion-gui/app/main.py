@@ -197,11 +197,21 @@ def _start_node(api_port: int) -> subprocess.Popen | None:
     if not _NODE_MAIN.exists():
         logger.warning("legion-node not found at %s", _NODE_MAIN)
         return None
-    return subprocess.Popen(
+
+    log_path = pathlib.Path.home() / ".local" / "share" / "legion" / "node.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_file = open(log_path, "a")  # noqa: SIM115
+
+    proc = subprocess.Popen(
         [sys.executable, str(_NODE_MAIN),
          "--no-interactive", f"--api-port={api_port}"],
         cwd=str(_NODE_DIR),
+        stdin=subprocess.DEVNULL,   # node must not read from terminal
+        stdout=log_file,            # node output goes to log file, not terminal
+        stderr=log_file,
     )
+    log_file.close()  # parent closes its copy; child keeps its own fd
+    return proc
 
 
 def _wait_for_node(api_port: int, timeout: float = 30) -> bool:
