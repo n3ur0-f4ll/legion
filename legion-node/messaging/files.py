@@ -29,6 +29,7 @@ Obrona warstwowa — nawet jeśli nadawca nie usunął metadanych, odbiorca to z
 
 from __future__ import annotations
 
+import asyncio
 import io
 from typing import Final
 
@@ -49,13 +50,8 @@ _PILLOW_FORMAT: Final[dict[str, str]] = {
     "image/webp": "WEBP",
 }
 
-# Pliki binarne — tylko rozmiar, bez podglądu, bez sanityzacji zawartości
-_BINARY_MIME_TYPES: Final = frozenset({
-    "application/pdf",
-    "application/zip",
-    "application/octet-stream",
-    "text/plain",
-})
+# SVG explicite zablokowane — może zawierać JS
+_BLOCKED_MIME_TYPES: Final = frozenset({"image/svg+xml", "text/html", "application/xhtml+xml"})
 
 
 class FileError(Exception):
@@ -69,24 +65,25 @@ def prepare_outgoing(data: bytes, file_name: str, mime_type: str) -> bytes:
     Other files: size and name validation only.
 
     Returns sanitized bytes. Raises FileError on any problem.
+    Must be called inside run_in_executor — PIL is CPU-bound.
     """
     _validate_size(data)
     _validate_file_name(file_name)
 
+    if mime_type in _BLOCKED_MIME_TYPES:
+        raise FileError(f"File type not allowed: {mime_type!r}")
+
     if mime_type in _IMAGE_SIGNATURES:
         return _sanitize_image(data, mime_type)
 
-    if mime_type not in _BINARY_MIME_TYPES:
-        raise FileError(f"Unsupported MIME type: {mime_type!r}")
-
+    # All other types: pass through (size + name already validated)
     return data
 
 
 def sanitize_incoming(data: bytes, mime_type: str) -> bytes:
     """Sanitize a received file — defense-in-depth on the receiver side.
 
-    Called AFTER decryption, before storing to DB.
-    Strips metadata even if the sender omitted this step.
+    Must be called inside run_in_executor — PIL is CPU-bound.
     """
     _validate_size(data)
 
@@ -94,6 +91,18 @@ def sanitize_incoming(data: bytes, mime_type: str) -> bytes:
         return _sanitize_image(data, mime_type)
 
     return data
+
+
+async def prepare_outgoing_async(data: bytes, file_name: str, mime_type: str) -> bytes:
+    """Async wrapper — runs PIL in executor to avoid blocking the event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, prepare_outgoing, data, file_name, mime_type)
+
+
+async def sanitize_incoming_async(data: bytes, mime_type: str) -> bytes:
+    """Async wrapper — runs PIL in executor to avoid blocking the event loop."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, sanitize_incoming, data, mime_type)
 
 
 def is_image(mime_type: str) -> bool:

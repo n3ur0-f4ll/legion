@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 MessageHandler = Callable[[dict], Awaitable[None]]
 
 _RECV_TIMEOUT = 30  # seconds to wait for a message before closing idle connection
+_MAX_MSG_BYTES = 12 * 1024 * 1024  # 12 MB — covers 5 MB file after base64+encrypt overhead
 
 
 class NodeServer:
@@ -64,6 +65,7 @@ class NodeServer:
             lambda ws: self._handle(ws, handler),
             self._host,
             self._port,
+            max_size=_MAX_MSG_BYTES,
         )
         self._server = await self._server_cm.__aenter__()
         logger.info("Node server listening on %s:%d", self._host, self._port)

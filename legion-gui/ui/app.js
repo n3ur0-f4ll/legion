@@ -390,12 +390,14 @@ async function loadMessages(contact) {
 
             let content;
             if (msg.file_data && msg.mime_type) {
-                const dataUrl = `data:${msg.mime_type};base64,${msg.file_data}`;
+                const name = esc(msg.file_name || "file");
+                const size = Math.round(atob(msg.file_data).length / 1024);
+                const saveBtn = `<button class="btn-copy" style="margin-top:6px" onclick="saveAttachment('${msg.file_data}','${msg.file_name||'file'}')">↓ Save</button>`;
                 if (msg.mime_type.startsWith("image/")) {
-                    content = `<img class="msg-image" src="${dataUrl}" alt="${esc(msg.file_name || 'image')}" onclick="window.open(this.src)">`;
+                    const dataUrl = `data:${msg.mime_type};base64,${msg.file_data}`;
+                    content = `<img class="msg-image" src="${dataUrl}" alt="${name}">${saveBtn}`;
                 } else {
-                    const size = Math.round(atob(msg.file_data).length / 1024);
-                    content = `<a class="msg-file-link" href="${dataUrl}" download="${esc(msg.file_name || 'file')}">📄 ${esc(msg.file_name || 'file')} (${size} KB)</a>`;
+                    content = `<div>📄 ${name} (${size} KB)</div>${saveBtn}`;
                 }
             } else {
                 content = msg.text != null ? esc(msg.text) : '<em style="opacity:.5">[encrypted]</em>';
@@ -438,6 +440,23 @@ async function sendMessage() {
     }
 }
 
+// Fallback MIME types for files browsers may not recognize
+const _MIME_BY_EXT = {
+    py: "text/x-python", js: "text/javascript", ts: "text/typescript",
+    json: "application/json", md: "text/markdown", sh: "text/x-sh",
+    rs: "text/x-rust", go: "text/x-go", c: "text/x-c", cpp: "text/x-c++",
+    java: "text/x-java", rb: "text/x-ruby", php: "text/x-php",
+    yaml: "text/yaml", yml: "text/yaml", toml: "application/toml",
+    xml: "text/xml", csv: "text/csv", sql: "text/x-sql",
+    txt: "text/plain", pdf: "application/pdf", zip: "application/zip",
+};
+
+function _detectMime(file) {
+    if (file.type && file.type !== "application/octet-stream") return file.type;
+    const ext = file.name.split(".").pop().toLowerCase();
+    return _MIME_BY_EXT[ext] || "application/octet-stream";
+}
+
 function handleFileSelected(input) {
     const file = input.files[0];
     if (!file) return;
@@ -450,12 +469,27 @@ function handleFileSelected(input) {
     const reader = new FileReader();
     reader.onload = (e) => {
         const base64 = e.target.result.split(",")[1];
-        pendingFile = { data: base64, name: file.name, mime: file.type || "application/octet-stream" };
+        pendingFile = { data: base64, name: file.name, mime: _detectMime(file) };
         document.getElementById("file-preview-name").textContent = `📎 ${file.name}`;
         document.getElementById("file-preview").classList.remove("hidden");
     };
+    reader.onerror = () => { showToast("Could not read file"); input.value = ""; };
     reader.readAsDataURL(file);
     input.value = "";
+}
+
+async function saveAttachment(base64Data, filename) {
+    if (window.pywebview && window.pywebview.api) {
+        const path = await window.pywebview.api.save_file(base64Data, filename);
+        if (path) showToast(`Saved to ${path}`);
+        else showToast("Could not save file");
+    } else {
+        // Fallback for browser testing
+        const a = document.createElement("a");
+        a.href = "data:application/octet-stream;base64," + base64Data;
+        a.download = filename;
+        a.click();
+    }
 }
 
 function clearFileSelection() {

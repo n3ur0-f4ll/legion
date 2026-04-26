@@ -80,7 +80,9 @@ async def send_message(
     uri = f"ws://{onion_address}:{hs_port}"
     try:
         async with asyncio.timeout(_SEND_TIMEOUT):
-            async with websockets.asyncio.client.connect(uri, sock=sock) as ws:
+            async with websockets.asyncio.client.connect(
+                uri, sock=sock, max_size=12 * 1024 * 1024
+            ) as ws:
                 await ws.send(json.dumps(msg))
     except TimeoutError as exc:
         raise NodeClientError("Send timed out") from exc

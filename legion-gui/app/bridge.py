@@ -79,6 +79,28 @@ class LegionBridge:
         )
         return False
 
+    def save_file(self, base64_data: str, filename: str) -> str:
+        """Save base64-encoded file to ~/Downloads. Returns full path or '' on error."""
+        import base64 as _b64
+        import pathlib
+        import re
+        # Sanitize filename — strip any path separators
+        safe_name = re.sub(r'[/\\:*?"<>|]', "_", filename) or "file"
+        downloads = pathlib.Path.home() / "Downloads"
+        downloads.mkdir(exist_ok=True)
+        dest = downloads / safe_name
+        # Avoid overwriting — append counter if file exists
+        counter = 1
+        while dest.exists():
+            stem, *ext = safe_name.rsplit(".", 1)
+            dest = downloads / (f"{stem}_{counter}" + (f".{ext[0]}" if ext else ""))
+            counter += 1
+        try:
+            dest.write_bytes(_b64.b64decode(base64_data))
+            return str(dest)
+        except Exception:
+            return ""
+
     def show_notification(self, title: str, message: str) -> None:
         """Display a system notification (best-effort)."""
         try:

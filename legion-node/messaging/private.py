@@ -36,7 +36,7 @@ from core import crypto
 from core.identity import Identity
 from core.protocol import MSG_PRIVATE, DEFAULT_TTL, build_message
 from core.storage import Database
-from messaging.files import FileError, prepare_outgoing, sanitize_incoming
+from messaging.files import FileError, prepare_outgoing_async, sanitize_incoming_async
 
 
 def _encode_payload(text: str | None, file_data: bytes | None,
@@ -107,7 +107,7 @@ async def send_file(
     ttl: int = DEFAULT_TTL,
 ) -> dict:
     """Sanitize, encrypt and send a file. Raises FileError on invalid input."""
-    sanitized = prepare_outgoing(file_data, file_name, mime_type)
+    sanitized = await prepare_outgoing_async(file_data, file_name, mime_type)
     payload_bytes = _encode_payload(None, sanitized, file_name, mime_type)
     ciphertext = crypto.encrypt(identity.private_key, recipient_public_key, payload_bytes)
 
@@ -160,7 +160,7 @@ async def receive(
             file_bytes = base64.b64decode(payload["f"])
             mime_type = payload.get("m", "application/octet-stream")
             file_name = payload.get("n", "file")
-            sanitized = sanitize_incoming(file_bytes, mime_type)
+            sanitized = await sanitize_incoming_async(file_bytes, mime_type)
             payload["f"] = base64.b64encode(sanitized).decode()
         except (FileError, Exception):
             payload = {"t": "[file could not be processed]"}

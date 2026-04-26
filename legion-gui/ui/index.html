@@ -120,7 +120,7 @@
                     <textarea id="msg-input" placeholder="Write a message…" rows="1"
                         onkeydown="handleMsgKey(event)"></textarea>
                     <label class="btn-attach" title="Attach file (max 5 MB)">
-                        📎<input id="msg-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/zip" style="display:none" onchange="handleFileSelected(this)">
+                        📎<input id="msg-file" type="file" style="display:none" onchange="handleFileSelected(this)">
                     </label>
                     <button class="btn-send" onclick="sendMessage()">Send</button>
                 </div>
