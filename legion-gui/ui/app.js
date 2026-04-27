@@ -328,7 +328,10 @@ async function handleEvent(event) {
         showToast("You were invited to a group");
     } else if (event.type === "group_member_update") {
         if (event.op === "removed_self") {
-            showToast(`You were removed from "${esc(event.group_name || "a group")}"`);
+            const msg = event.dissolved
+                ? `Group "${esc(event.group_name || "a group")}" was dissolved by the admin`
+                : `You were removed from "${esc(event.group_name || "a group")}"`;
+            showToast(msg);
             if (currentGroup && currentGroup.id === event.group_id) {
                 currentGroup = null;
                 showPanel("welcome");
@@ -703,6 +706,13 @@ function handlePostKey(e) {
 // ================================================================
 // Settings
 // ================================================================
+
+function showOpsec() {
+    showPanel("opsec");
+    document.querySelectorAll(".contact-item, .group-item").forEach(el =>
+        el.classList.remove("active")
+    );
+}
 
 async function showSettings() {
     showPanel("settings");

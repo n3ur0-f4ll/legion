@@ -219,7 +219,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     border: 1px dashed var(--border);
     border-radius: 4px;
     padding: 7px;
-    margin-top: 8px;
+    margin-bottom: 8px;
     font-size: 12px;
 }
 
@@ -711,6 +711,99 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     font-size: 12px;
 }
 .msg-file-link:hover { text-decoration: underline; }
+
+/* ----------------------------------------------------------------
+   OpSec Guide
+   ---------------------------------------------------------------- */
+
+.opsec-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 24px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.opsec-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+}
+
+.opsec-logo {
+    width: 72px;
+    height: 72px;
+    filter: drop-shadow(0 0 16px var(--accent));
+}
+
+.opsec-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+}
+
+.opsec-subtitle {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.opsec-section {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    border-left: 3px solid var(--border);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.opsec-protected { border-left-color: var(--accent); }
+.opsec-warning   { border-left-color: var(--warning); }
+.opsec-info      { border-left-color: #4a9eff; }
+.opsec-danger    { border-left-color: var(--error); background: #1a0a0a; }
+
+.opsec-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+.opsec-protected .opsec-section-title { color: var(--accent); }
+.opsec-warning   .opsec-section-title { color: var(--warning); }
+.opsec-info      .opsec-section-title { color: #4a9eff; }
+.opsec-danger    .opsec-section-title { color: var(--error); }
+
+.opsec-item {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    font-size: 12px;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.opsec-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    width: 20px;
+    text-align: center;
+}
+.opsec-badge.ok     { color: var(--accent); }
+.opsec-badge.warn   { color: var(--warning); }
+.opsec-badge.info   { color: #4a9eff; }
+.opsec-badge.danger { color: var(--error); }
 
 /* ----------------------------------------------------------------
    Settings

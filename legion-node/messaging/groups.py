@@ -364,9 +364,16 @@ async def leave_group(
 ) -> list[tuple[dict, str]]:
     """Build leave notifications for all other group members.
 
-    The leaving member signs their own departure — only they can claim to be leaving
-    (Ed25519 signature guarantees authenticity). The group is deleted from local DB
-    by the caller after queuing these broadcasts.
+    Admin path (group dissolution):
+      Sends each member a message addressed TO them with their own key as public_key.
+      Recipients see op=remove with their own key → removed_self → delete group.
+      Field dissolved=True lets the GUI distinguish "dissolved" from "removed".
+
+    Regular member path (voluntary leave):
+      Sends each member a self-leave notification (op=remove, public_key=self,
+      voluntary=True). Recipients remove the leaver from their roster.
+      The group admin auto-rotates the key upon receiving this (handled in
+      make_message_handler on the admin's node).
 
     Returns list of (msg, destination_onion) to enqueue before deleting.
     """
@@ -377,6 +384,7 @@ async def leave_group(
     members = await db.get_group_members(group_id)
     broadcasts: list[tuple[dict, str]] = []
     self_hex = identity.public_key.hex()
+    is_admin = (group["admin_key"] == self_hex)
 
     for member in members:
         if member["public_key"] == self_hex:
@@ -384,15 +392,29 @@ async def leave_group(
         if not member["onion_address"]:
             continue
         m_pub = bytes.fromhex(member["public_key"])
-        payload = json.dumps({
-            "op": "remove",
-            "group_id": group_id,
-            "public_key": self_hex,
-            "group_name": group["name"],
-            "alias_hint": identity.alias,
-            "voluntary": True,
-        }).encode()
-        ct = crypto.encrypt(identity.private_key, m_pub, payload)
+
+        if is_admin:
+            # Tell each member that THEY are removed (→ removed_self → delete group)
+            payload_dict = {
+                "op": "remove",
+                "group_id": group_id,
+                "public_key": member["public_key"],  # their own key
+                "group_name": group["name"],
+                "dissolved": True,
+            }
+        else:
+            # Regular member: announce own departure
+            payload_dict = {
+                "op": "remove",
+                "group_id": group_id,
+                "public_key": self_hex,
+                "group_name": group["name"],
+                "alias_hint": identity.alias,
+                "voluntary": True,
+            }
+
+        ct = crypto.encrypt(identity.private_key, m_pub,
+                             json.dumps(payload_dict).encode())
         msg = build_message(
             type=MSG_GROUP_MEMBER_UPDATE,
             from_key=identity.public_key,
@@ -440,6 +462,7 @@ async def handle_member_update(
     group_name = update.get("group_name", group["name"])
     alias_hint = update.get("alias_hint", "")
     voluntary = update.get("voluntary", False)
+    dissolved = update.get("dissolved", False)
 
     # Accept roster changes only from the group admin — EXCEPT self-removal:
     # a member may announce their own voluntary departure by signing with their own key.
@@ -458,10 +481,10 @@ async def handle_member_update(
 
     elif op == "remove" and pub:
         if pub == identity.public_key.hex():
-            # We were removed — delete the group from our local DB
+            # We were removed (or group dissolved) — delete from local DB
             await db.delete_group(group_id)
             return {"op": "removed_self", "group_id": group_id, "public_key": pub,
-                    "group_name": group_name}
+                    "group_name": group_name, "dissolved": dissolved}
         else:
             await db.delete_group_member(group_id, pub)
             return {"op": "remove", "group_id": group_id, "public_key": pub,

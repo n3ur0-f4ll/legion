@@ -729,6 +729,31 @@ def make_message_handler(state: AppState):
                     state.push_event("group_member_update", {"from": sender, **info})
                     state.push_network_log("info", "msg",
                         f"← Group roster updated by {sender[:8]}… (op={info['op']})")
+
+                    # Auto-rotate key when admin receives a voluntary member departure
+                    if (info.get("op") == "remove"
+                            and info.get("voluntary")
+                            and state.identity is not None):
+                        group = await state.db.get_group(info["group_id"])
+                        if group and group["admin_key"] == state.identity.public_key.hex():
+                            try:
+                                member_pub = bytes.fromhex(info["public_key"])
+                                _, rot_broadcasts = await groups.remove_member(
+                                    state.db, state.identity,
+                                    info["group_id"], member_pub,
+                                )
+                                for rot_msg, rot_onion in rot_broadcasts:
+                                    await state.delivery_queue.enqueue(
+                                        rot_msg, rot_onion, via_relay=False
+                                    )
+                                state.push_network_log("info", "msg",
+                                    f"Key rotated after {info.get('alias_hint', sender[:8]+'…')} left")
+                                state.push_event("group_key_update", {
+                                    "from": state.identity.public_key.hex(),
+                                    "group_id": info["group_id"],
+                                })
+                            except Exception:
+                                pass
             except Exception:
                 pass
 

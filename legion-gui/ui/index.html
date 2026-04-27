@@ -86,14 +86,14 @@
 
             <!-- Contacts list -->
             <div id="contacts-panel" class="sidebar-list">
-                <div id="contacts-list"></div>
                 <button class="btn-add" onclick="showAddContact()">+ Add contact</button>
+                <div id="contacts-list"></div>
             </div>
 
             <!-- Groups list -->
             <div id="groups-panel" class="sidebar-list hidden">
-                <div id="groups-list"></div>
                 <button class="btn-add" onclick="showCreateGroup()">+ New group</button>
+                <div id="groups-list"></div>
             </div>
 
             <!-- Network panel (sidebar) -->
@@ -107,6 +107,7 @@
 
             <div id="sidebar-bottom">
                 <span id="version-label" class="version-label"></span>
+                <button class="btn-icon" onclick="showOpsec()" title="OpSec Guide">🛡</button>
                 <button class="btn-icon" onclick="showSettings()" title="Settings">⚙</button>
             </div>
         </nav>
@@ -181,6 +182,51 @@
                     </div>
                 </div>
                 <div id="network-log-area" class="log-area"></div>
+            </div>
+
+            <!-- OpSec Guide panel -->
+            <div id="panel-opsec" class="panel hidden">
+                <div class="opsec-content">
+
+                    <div class="opsec-hero">
+                        <img src="img/logo.png" class="opsec-logo" alt="Legion">
+                        <div class="opsec-title">LEGION</div>
+                        <div class="opsec-subtitle">Operational Security Guide</div>
+                    </div>
+
+                    <div class="opsec-section opsec-protected">
+                        <div class="opsec-section-title">✓ What Legion protects</div>
+                        <div class="opsec-item"><span class="opsec-badge ok">✓</span>Your real IP address — all traffic routes through the Tor network. Contacts never see where you connect from.</div>
+                        <div class="opsec-item"><span class="opsec-badge ok">✓</span>Message content — end-to-end encrypted with X25519 + XSalsa20-Poly1305 (libsodium). Only sender and recipient can read.</div>
+                        <div class="opsec-item"><span class="opsec-badge ok">✓</span>File metadata — images are re-encoded before sending, permanently stripping GPS location, camera model, timestamps and all EXIF data.</div>
+                        <div class="opsec-item"><span class="opsec-badge ok">✓</span>Private key — stored encrypted on disk with Argon2id + SecretBox. Never leaves your device. Required password at every launch.</div>
+                        <div class="opsec-item"><span class="opsec-badge ok">✓</span>Message history — plaintext is never written to disk. Decryption happens in memory only, on demand.</div>
+                    </div>
+
+                    <div class="opsec-section opsec-warning">
+                        <div class="opsec-section-title">⚠ What Legion cannot protect</div>
+                        <div class="opsec-item"><span class="opsec-badge warn">⚠</span>A compromised device — malware with access to your screen or memory bypasses all cryptographic protections.</div>
+                        <div class="opsec-item"><span class="opsec-badge warn">⚠</span>Physical access while the app is running — private key lives in RAM. Anyone with access to your running session can read messages.</div>
+                        <div class="opsec-item"><span class="opsec-badge warn">⚠</span>Your contacts' devices — you cannot control the security of the other end.</div>
+                        <div class="opsec-item"><span class="opsec-badge warn">⚠</span>Advanced traffic analysis — Tor conceals your IP, but a sufficiently powerful global adversary observing large portions of the network could perform timing correlation attacks.</div>
+                        <div class="opsec-item"><span class="opsec-badge warn">⚠</span>Forced disclosure — no technology protects against physical coercion to reveal your password.</div>
+                    </div>
+
+                    <div class="opsec-section opsec-info">
+                        <div class="opsec-section-title">● Your responsibilities</div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span>Use a strong, unique password (16+ characters recommended). There is no password recovery.</div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span>Close or lock the app when leaving your device unattended. The private key is in memory while the app runs.</div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span>Verify contact identity through a separate trusted channel when the stakes are high. Contact cards can be forged if you accept them from untrusted sources.</div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span>Share your contact card only with people you trust. Once someone has it, they can initiate contact with you.</div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span>Keep your operating system and Legion up to date. Security depends on the entire stack.</div>
+                    </div>
+
+                    <div class="opsec-section opsec-danger">
+                        <div class="opsec-section-title">⚠ Emergency — Panic Button</div>
+                        <div class="opsec-item"><span class="opsec-badge danger">!</span>Available in Settings → Danger zone. Permanently and immediately destroys your identity, all contacts, all messages and all groups. This action is irreversible. Use before device seizure if necessary.</div>
+                    </div>
+
+                </div>
             </div>
 
             <!-- Settings panel -->
