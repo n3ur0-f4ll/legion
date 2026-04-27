@@ -1,279 +1,308 @@
-# Legion — Bezpieczeństwo komunikacji
+# Legion — Security Model
 
-Ten dokument wyjaśnia w jaki sposób Legion chroni Twoje wiadomości, pliki i tożsamość.
-Wszystkie opisane mechanizmy wynikają bezpośrednio z kodu źródłowego aplikacji.
-
----
-
-## Czym jest Legion
-
-Legion to komunikator zaprojektowany od podstaw z myślą o prywatności i bezpieczeństwie.
-Nie korzysta z żadnych centralnych serwerów. Nie ma firmy która przechowuje Twoje dane.
-Twój węzeł komunikuje się bezpośrednio z węzłem rozmówcy — przez sieć Tor.
+This document explains how Legion protects your messages, files and identity.
+Every mechanism described here is directly derived from the source code.
 
 ---
 
-## Sieć Tor — anonimowość na poziomie sieci
+## What Legion is
 
-Każda wiadomość i każdy plik przechodzi przez **sieć Tor** — zdecentralizowaną sieć
-węzłów pośredniczących, która ukrywa źródło i cel połączenia.
-
-- Twój prawdziwy adres IP nigdy nie jest widoczny dla rozmówcy
-- Adres rozmówcy nie jest widoczny dla Ciebie
-- Pośrednicy w sieci Tor widzą tylko zaszyfrowany ruch — nie jego zawartość
-- Każdy węzeł Legion działa jako ukryta usługa Tor (adres `.onion`)
-- Połączenia są akceptowane wyłącznie z sieci Tor — zero możliwości niechronionego ruchu
+Legion is a messaging application designed from the ground up for privacy and security.
+It uses no central servers. There is no company storing your data.
+Your node communicates directly with your contact's node — through the Tor network.
 
 ---
 
-## Szyfrowanie wiadomości
+## Network Anonymity — Tor
 
-Każda wiadomość prywatna jest szyfrowana kluczem publicznym odbiorcy.
+Every message and file travels through the **Tor network**, a decentralized overlay that
+hides the origin and destination of each connection.
 
-**Algorytm:** X25519 (wymiana kluczy) + XSalsa20-Poly1305 (szyfrowanie z uwierzytelnianiem)
-— implementacja przez bibliotekę **libsodium** (PyNaCl), uznaną za bezpieczną przez
-kryptografów na całym świecie.
-
-Co to oznacza w praktyce:
-
-- Tylko Ty i Twój rozmówca możecie odczytać treść wiadomości
-- Nikt po drodze — ani operator relay, ani węzeł Tor — nie może jej odczytać
-- Modyfikacja wiadomości w trakcie przesyłu jest wykrywana i wiadomość jest odrzucana
-- Każda wiadomość ma unikalny losowy nonce — nawet te same słowa wyglądają
-  zupełnie inaczej przy każdym szyfrowaniu
+- Your real IP address is never visible to contacts or relay operators
+- Your contact's IP address is never visible to you
+- Tor relay nodes see only encrypted traffic — never its content
+- Every Legion node operates as a Tor v3 Hidden Service (`.onion` address)
+- The node only accepts connections from within Tor — clearnet connections are impossible
+- The `.onion` address is derived deterministically from your Ed25519 public key,
+  so it is stable across restarts and consistent with your identity
 
 ---
 
-## Podpisy cyfrowe
+## Private Message Encryption
 
-Każda wiadomość jest podpisana kluczem prywatnym nadawcy.
+Every private message is encrypted with the recipient's public key.
 
-**Algorytm:** Ed25519 — standardowy algorytm podpisów cyfrowych, używany m.in. przez SSH.
+**Algorithm:** X25519 (Diffie-Hellman key exchange) + XSalsa20-Poly1305 (authenticated
+encryption) — implemented via **libsodium** (PyNaCl).
 
-Zanim jakakolwiek wiadomość zostanie przetworzona przez węzeł odbiorcy:
+Both keys are Ed25519 keypairs; libsodium converts them to Curve25519 internally for
+the Box construction. This conversion is a well-established, safe technique.
 
-1. Weryfikowana jest sygnatura Ed25519
-2. Sprawdzane jest że `id == SHA256(payload)` — payload nie został podmieniony
-3. Sprawdzany jest czas życia wiadomości (TTL) — stare wiadomości są odrzucane
+In practice:
 
-Wiadomość z nieprawidłową sygnaturą jest odrzucana natychmiast i cicho,
-bez żadnej odpowiedzi nadawcy.
-
----
-
-## Ochrona klucza prywatnego
-
-Twój klucz prywatny to Twoja tożsamość. Legion chroni go na dwa sposoby:
-
-1. **Nigdy nie opuszcza urządzenia** — klucz prywatny nie jest wysyłany przez sieć,
-   nie jest przechowywany na żadnym serwerze zewnętrznym
-
-2. **Szyfrowanie hasłem na dysku** — klucz jest szyfrowany przy zapisie:
-   - **Argon2id** (OWASP-zalecany algorytm hashowania haseł) wyprowadza klucz
-     szyfrujący z Twojego hasła — odporny na ataki słownikowe i GPU
-   - **XSalsa20-Poly1305** (SecretBox) szyfruje klucz prywatny
-   - Każde hasło generuje unikalną losową sól — te same hasła dają różne klucze
-
-Hasło jest wymagane przy **każdym uruchomieniu** aplikacji — celowo, jako
-dodatkowa warstwa ochrony w przypadku kradzieży urządzenia.
+- Only you and your contact can decrypt the message
+- No intermediary — relay operator, Tor node, or anyone else — can read it
+- Any tampering with the ciphertext in transit is detected and the message is silently dropped
+- Every message uses a unique random nonce, so identical plaintexts produce different ciphertexts
 
 ---
 
-## Bezpieczeństwo plików i obrazów
+## Digital Signatures and Message Validation
 
-Pliki i obrazy są szyfrowane **tym samym algorytmem co wiadomości tekstowe**
-(X25519 + XSalsa20-Poly1305). Plik jest traktowany jak ciąg bajtów — kryptografia
-nie rozróżnia czy szyfruje tekst, zdjęcie czy dokument PDF.
+Every message is signed by the sender's private key before transmission.
 
-Dodatkowo każdy plik przechodzi przez **dwustronną sanityzację**:
+**Signing algorithm:** Ed25519 — the same algorithm used by OpenSSH and many TLS
+implementations.
 
-### Po stronie nadawcy (przed wysłaniem)
+Before any incoming message is processed, the receiving node verifies:
 
-Biblioteka **Pillow** (Python Imaging Library) re-enkoduje każdy obraz od zera.
-Proces ten usuwa **wszystkie** ukryte dane:
+1. **Ed25519 signature** — the message was created by the claimed sender
+2. **Payload integrity** — `id == SHA256(payload)` — the payload was not altered
+3. **Timestamp validity** — messages with a timestamp more than 5 minutes in the future
+   are rejected (prevents future-dated replay)
+4. **TTL check** — messages older than their declared TTL are discarded
 
-- Dane GPS i lokalizacja (EXIF)
-- Model aparatu, obiektyw, ustawienia
-- Data i godzina wykonania zdjęcia
-- Profile ICC (informacje o kalibracji kolorów)
-- Metadane XMP (Adobe, etc.)
-- Miniatury wbudowane w plik
-- Komentarze i opisy
-
-Re-enkodowanie to nie "wyczyszczenie pól" — to zbudowanie nowego pliku od zera,
-co jest bezpieczniejsze niż selektywne usuwanie metadanych.
-
-### Po stronie odbiorcy (po odebraniu)
-
-Ten sam proces sanityzacji wykonywany jest **ponownie** po odszyfrowaniu pliku.
-Nawet jeśli nadawca pominął sanityzację lub używał zmodyfikowanej wersji aplikacji —
-Twój węzeł wyczyści plik przed zapisem.
-
-### Weryfikacja formatu
-
-Przed sanityzacją sprawdzane są bajty nagłówka pliku ("magic bytes") — plik
-nie może podszywać się pod inny format niż deklaruje.
+A message failing any of these checks is silently dropped with no response to the sender.
+This prevents information leakage about which addresses are active.
 
 ---
 
-## Plaintext nigdy nie jest na dysku
+## Private Key Protection
 
-Wiadomości są przechowywane w lokalnej bazie danych **wyłącznie w formie zaszyfrowanej**.
-Odszyfrowanie następuje wyłącznie w momencie odczytu przez API — wynik nie jest nigdy
-zapisywany na dysk.
+Your Ed25519 private key is your identity. Legion protects it in two ways.
 
-Oznacza to że nawet pełny dostęp do pliku bazy danych `node.db` nie pozwala odczytać
-treści wiadomości bez znajomości hasła (które jest potrzebne do odblokowania klucza prywatnego).
+**1. Never leaves the device.**
+The private key is never transmitted over the network and never stored on any external server.
 
----
+**2. Encrypted at rest.**
+The key is encrypted before being written to disk:
 
-## Grupy czatowe
+- **Argon2id** (OWASP-recommended password hashing) derives a 256-bit encryption key from
+  your password. It is resistant to dictionary attacks and GPU/ASIC acceleration.
+- **XSalsa20-Poly1305 (SecretBox)** encrypts the private key seed.
+- A unique random 16-byte salt is generated per password — identical passwords produce
+  different encryption keys.
 
-### Model szyfrowania grupowego
-
-Grupa to **wspólny klucz symetryczny** (32 bajty, XSalsa20-Poly1305 / SecretBox)
-generowany losowo przez twórcę grupy. Każdy post grupowy jest szyfrowany tym kluczem
-i podpisany kluczem prywatnym autora.
-
-Co to oznacza w praktyce:
-
-- Treść postów jest widoczna wyłącznie dla posiadaczy klucza grupy
-- Każdy post jest indywidualnie podpisany — podszywanie się pod innego członka
-  jest kryptograficznie niemożliwe
-- Operator relay, węzły Tor ani żadna osoba trzecia nie może odczytać postów
-
-### Zapraszanie nowych członków
-
-Gdy admin zaprasza nową osobę, przesyła jej zaproszenie zawierające:
-
-- Klucz grupy zaszyfrowany kluczem publicznym nowego członka (X25519 + XSalsa20-Poly1305)
-- Listę aktualnych członków grupy (adresy `.onion` i klucze publiczne)
-- Metadane grupy (identyfikator, nazwa)
-
-**Cały payload zaproszenia jest szyfrowany kluczem publicznym odbiorcy** —
-metadane grupy nie są widoczne w warstwie sieciowej dla żadnej strony trzeciej.
-Tylko zaproszony może odczytać zawartość zaproszenia.
-
-Po przyjęciu zaproszenia nowy członek może wysyłać posty bezpośrednio do każdego
-z pozostałych członków, bez pośrednictwa admina.
-
-### Równość członków w routingu
-
-Posty grupowe są dostarczane **peer-to-peer** od nadawcy do każdego członka
-bezpośrednio przez sieć Tor. Admin nie jest routerem — awaria lub niedostępność
-admina nie uniemożliwia komunikacji między pozostałymi członkami.
-
-### Rotacja klucza po wykluczeniu
-
-Gdy admin usuwa członka z grupy:
-
-1. Generowany jest **nowy losowy klucz grupy** (K₂)
-2. Nowy klucz jest przesyłany do każdego pozostałego członka osobno,
-   zaszyfrowany jego indywidualnym kluczem publicznym
-3. Wszystkie nowe posty używają wyłącznie K₂
-4. Wykluczona osoba traci możliwość odczytania nowych postów
-
-**Granica ochrony:** osoba wykluczona zachowuje klucz K₁, którym może
-odczytać posty z okresu gdy była członkiem. Jest to nieodłączna cecha
-symetrycznych systemów grupowych — całkowita forward secrecy wymagałaby
-mechanizmu ratchet (Signal-style) i byłaby wielokrotnie bardziej złożona.
-Rotacja klucza chroni **przyszłą** komunikację.
-
-Weryfikacja `group_key_update`: węzeł odbiorcy akceptuje nowy klucz tylko
-jeśli nadawca wiadomości jest adminem danej grupy zgodnie z lokalną bazą.
-
-### Zmiany w składzie grupy
-
-Gdy dołącza lub odchodzi członek, admin rozsyła do wszystkich pozostałych
-wiadomość `group_member_update` — zaszyfrowaną per-odbiorca kluczem publicznym.
-Każdy węzeł aktualizuje lokalną listę members niezależnie.
-
-### Co admin wie o grupie
-
-Admin zna adresy `.onion` i klucze publiczne wszystkich członków, których
-sam zaprosił. Jest to konieczne do dostarczania zaproszeń i updates.
-Relacja zaufania: admin = osoba która Cię zaprosiła.
+The password is required at **every launch** — intentionally, as an additional layer of
+protection in case of device theft. The decrypted private key lives in RAM only while the
+application is running.
 
 ---
 
-## Filtrowanie nadawców
+## Files and Images
 
-Legion akceptuje wiadomości wyłącznie od **znanych kontaktów**.
+Files are encrypted with the **same algorithm as private messages**
+(X25519 + XSalsa20-Poly1305). A file is treated as a byte sequence — the cryptography
+does not distinguish between text, images or PDF documents.
 
-- Wiadomości prywatne: nadawca musi być w Twojej liście kontaktów
-- Posty grupowe: autor musi być członkiem danej grupy
-- Zaproszenia do grup: wyłącznie od istniejących kontaktów
+### Two-sided Sanitization
 
-Wiadomości od nieznanych adresów są odrzucane natychmiast i cicho — bez żadnej
-odpowiedzi, co utrudnia skanowanie i enumerację aktywnych węzłów.
+Every file additionally passes through **bidirectional sanitization**:
 
----
+**Sender side (before encryption):**
+The **Pillow** library (Python Imaging Library) re-encodes every image from scratch.
+This removes all hidden data:
 
-## Weryfikacja kontaktów (karty kontaktowe)
+- GPS coordinates and location (EXIF)
+- Camera model, lens, exposure settings
+- Date and time of capture
+- ICC color profiles
+- XMP metadata (Adobe etc.)
+- Embedded thumbnails
+- Comments and descriptions
 
-Karta kontaktowa — plik JSON wymieniany przy dodawaniu kontaktu — zawiera
-**podpis cyfrowy Ed25519**. Podpis obejmuje klucz publiczny, adres `.onion`
-i sugerowaną nazwę.
+Re-encoding is not "clearing fields" — it constructs a new file from scratch, which is
+more thorough than selective metadata removal.
 
-Twój węzeł weryfikuje podpis przed dodaniem kontaktu — nie można podszyć się
-pod inną osobę, nawet znając jej adres `.onion`.
+**Receiver side (after decryption):**
+The same sanitization process runs again after the file is decrypted. Even if the sender
+skipped sanitization or used a modified client, your node cleans the file before saving it.
 
----
-
-## PANIC BUTTON — natychmiastowe usunięcie danych
-
-W Ustawieniach dostępny jest przycisk **"⚠ PANIC — Delete everything"**.
-
-Po podwójnym potwierdzeniu usuwa z bazy danych:
-
-- Tożsamość i zaszyfrowany klucz prywatny
-- Wszystkie kontakty
-- Całą historię wiadomości i pliki
-- Wszystkie grupy i posty
-- Kolejkę dostarczania
-
-Operacja jest **nieodwracalna** i wykonywana natychmiast. Klucz prywatny
-w pamięci jest kasowany, aplikacja wraca do ekranu tworzenia tożsamości.
+**Format verification:**
+Before sanitization, the file's header bytes ("magic bytes") are checked.
+A file cannot impersonate a different format than it declares.
 
 ---
 
-## Czego Legion NIE gwarantuje
+## Plaintext Never on Disk
 
-Uczciwe wyjaśnienie granic ochrony:
+Messages are stored in the local SQLite database **in encrypted form only**.
+Decryption happens exclusively at API read time — the plaintext result is never written
+to disk.
 
-- **Bezpieczeństwo urządzenia** — jeśli Twój komputer jest zainfekowany malware'm
-  lub ktoś ma do niego fizyczny dostęp gdy aplikacja działa (klucz w pamięci),
-  ochrona kryptograficzna nie pomaga
-
-- **Anonimowość metadanych** — Tor ukrywa IP, ale sam fakt komunikacji z danym
-  `.onion` adresem jest trudny do ukrycia na poziomie analizy ruchu sieciowego
-  przez zaawansowanego przeciwnika kontrolującego duże fragmenty sieci Tor
-
-- **Bezpieczeństwo rozmówcy** — Legion nie może zagwarantować że urządzenie
-  Twojego rozmówcy jest bezpieczne
-
-- **Odporność na przymus** — żadna technologia nie chroni przed zmuszeniem
-  do ujawnienia hasła
+This means that even full access to the `node.db` file does not allow reading message
+content without knowing your password (which is needed to unlock the private key).
 
 ---
 
-## Biblioteki kryptograficzne
+## Group Chats
 
-Legion używa wyłącznie sprawdzonych, audytowanych bibliotek:
+### Encryption model
 
-| Biblioteka | Zastosowanie |
+A group is a **shared symmetric key** (32 bytes, XSalsa20-Poly1305 / SecretBox)
+generated randomly by the group creator. Every post is encrypted with this key and
+individually signed with the author's Ed25519 private key.
+
+- Post content is visible only to holders of the group key
+- Each post is individually signed — impersonating another member is cryptographically impossible
+- Relay operators, Tor nodes, and third parties cannot read posts
+
+### Invitations
+
+When an admin invites a new member, the invite payload contains:
+
+- The group key encrypted with the new member's public key (X25519 + XSalsa20-Poly1305)
+- The full member roster (`.onion` addresses and public keys of all current members)
+- Group metadata (identifier, name)
+
+**The entire invite payload is Box-encrypted for the recipient.**
+Group metadata is not visible to any third party in the network layer.
+Only the invited person can decrypt the invite contents.
+
+After accepting, the new member has all other members' `.onion` addresses and can deliver
+posts peer-to-peer without the admin acting as a router.
+
+### Peer-to-peer routing
+
+Group posts are delivered **peer-to-peer** from the sender directly to every member
+through Tor. The admin is not a message router — admin unavailability does not prevent
+communication between remaining members.
+
+### Key rotation after member removal
+
+When the admin forcibly removes a member:
+
+1. A new random group key (K₂) is generated
+2. K₂ is sent to every remaining member individually, Box-encrypted with their public key
+3. All new posts use K₂ exclusively
+4. The removed member can no longer decrypt new posts
+
+**Boundary of protection:** the removed member retains the old key K₁ and can still read
+posts from the period when they were a member. Full forward secrecy would require a
+per-member ratchet mechanism (as in Signal) — that would be significantly more complex.
+Key rotation protects **future** communication.
+
+The receiver's node accepts a `group_key_update` only if the sender is recorded as the
+admin of that group in the local database.
+
+### Voluntary member departure
+
+When a member leaves voluntarily, they sign and broadcast their own departure
+(`group_member_update`) to all remaining members. The Ed25519 signature ensures only the
+departing member can announce their own departure — they cannot remove others.
+
+Upon receiving this, the admin's node automatically performs a key rotation, sending the
+new key to all remaining members. The departing member receives no new posts.
+
+### Group dissolution by admin
+
+When the admin dissolves the group, every member receives a notification telling them they
+have been removed (`dissolved=true`). Each member's node deletes the group from their local
+database upon receiving this message.
+
+### Roster change notifications
+
+When a member joins or leaves, the admin sends a `group_member_update` message to all
+remaining members, encrypted per-recipient with their public key. Each node updates its
+local member list independently.
+
+---
+
+## Sender Filtering
+
+Legion only accepts messages from **known senders**.
+
+- Private messages: sender must be in your contacts list
+- Group posts: author must be a member of the relevant group
+- Group invitations: only from existing contacts
+
+Messages from unknown addresses are silently dropped with no response.
+This makes active node enumeration and scanning significantly harder.
+
+---
+
+## Contact Verification (Contact Cards)
+
+A contact card — a signed JSON file exchanged when adding a contact — contains an
+**Ed25519 digital signature**. The signature covers the public key, `.onion` address,
+and suggested display name.
+
+Your node verifies the signature before adding the contact — you cannot be impersonated
+even if an attacker knows your `.onion` address.
+
+---
+
+## Message Expiry (TTL)
+
+Every message carries a TTL (time-to-live) value, configurable by the sender from 1 hour
+to 30 days (default: 7 days).
+
+- The sender's delivery queue stops retrying once `now - timestamp > ttl`
+- The receiver's node rejects messages where `now - timestamp > ttl` (message age exceeds TTL)
+- Both checks use the `timestamp` field embedded in the message at creation time
+- Messages with a `timestamp` more than 5 minutes in the future are also rejected —
+  a future timestamp would make the age calculation negative, allowing a message to
+  evade expiry indefinitely
+
+---
+
+## Panic Button
+
+Available in **Settings → Danger zone**.
+
+After double confirmation, the panic button:
+
+1. Deletes all rows from every database table:
+   identity, contacts, messages, groups, group_members, group_posts, delivery_queue, relay_config
+2. Runs `VACUUM` — SQLite rewrites the database file from scratch, so freed pages
+   (deleted rows) are not present in the new file and cannot be recovered from it
+3. Clears the in-memory private key immediately
+4. Returns the UI to the identity creation screen
+
+The operation is **irreversible** and executes immediately.
+
+**Note on disk-level forensics:** `VACUUM` ensures deleted data is not in the database
+file. However, the original bytes may remain in unallocated sectors of the storage medium
+until overwritten by the operating system. Full disk encryption (e.g. LUKS) eliminates
+this residual risk.
+
+---
+
+## What Legion Does NOT Guarantee
+
+An honest explanation of the protection limits:
+
+- **Device security** — if your computer is infected with malware or someone has physical
+  access while the application is running (key in memory), cryptographic protection is bypassed
+
+- **Metadata anonymity** — Tor hides your IP, but the fact that you communicate with a
+  specific `.onion` address may be inferred by a sufficiently powerful adversary controlling
+  large portions of the Tor network through traffic correlation analysis
+
+- **Your contact's security** — Legion cannot guarantee that the other end is secure
+
+- **Resistance to coercion** — no technology protects against forced disclosure of
+  your password
+
+---
+
+## Cryptographic Libraries
+
+Legion uses only established, widely-audited libraries:
+
+| Library | Use |
 |---|---|
 | **libsodium** (via PyNaCl) | X25519, Ed25519, XSalsa20-Poly1305, Argon2id |
-| **Pillow** | Sanityzacja obrazów, usuwanie metadanych |
-| **Stem** | Zarządzanie Torem |
+| **Pillow** | Image sanitization, metadata stripping |
+| **Stem** | Tor process management |
 
-Żaden własny algorytm kryptograficzny nie został zaimplementowany w aplikacji.
+No custom cryptographic algorithms are implemented in this application.
 
 ---
 
-## Kod źródłowy
+## Source Code
 
-Legion jest oprogramowaniem **open source** na licencji AGPL-3.0.
-Każdy może przejrzeć kod, zweryfikować opisane mechanizmy i zgłosić błędy.
+Legion is **open source** software licensed under AGPL-3.0.
+Anyone can review the code, verify the mechanisms described here, and report bugs.
 
-Bezpieczeństwo przez transparentność, nie przez ukrywanie.
+Security through transparency, not obscurity.
