@@ -339,18 +339,31 @@ class Database:
         )
         await self._conn.commit()
 
-    async def get_group_unread_count(self, group_id: str) -> int:
+    async def get_group_unread_count(self, group_id: str, our_key: str = "") -> int:
+        """Return count of unread posts in a group.
+
+        Excludes posts authored by our_key — your own sent posts are never unread.
+        """
         async with self._conn.execute(
             "SELECT last_read_at FROM groups WHERE id = ?", (group_id,)
         ) as cur:
             row = await cur.fetchone()
         last_read = row["last_read_at"] if row else 0
-        async with self._conn.execute(
-            "SELECT COUNT(*) as cnt FROM group_posts "
-            "WHERE group_id = ? AND timestamp > ?",
-            (group_id, last_read),
-        ) as cur:
-            row = await cur.fetchone()
+
+        if our_key:
+            async with self._conn.execute(
+                "SELECT COUNT(*) as cnt FROM group_posts "
+                "WHERE group_id = ? AND timestamp > ? AND author_key != ?",
+                (group_id, last_read, our_key),
+            ) as cur:
+                row = await cur.fetchone()
+        else:
+            async with self._conn.execute(
+                "SELECT COUNT(*) as cnt FROM group_posts "
+                "WHERE group_id = ? AND timestamp > ?",
+                (group_id, last_read),
+            ) as cur:
+                row = await cur.fetchone()
         return row["cnt"] if row else 0
 
     async def get_group_members(self, group_id: str) -> list[dict]:

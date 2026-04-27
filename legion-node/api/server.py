@@ -457,10 +457,11 @@ def create_app(state: AppState) -> FastAPI:
 
     @app.get("/api/groups")
     async def get_groups(s: AppState = Depends(get_state)):
+        our_key = s.identity.public_key.hex() if s.identity else ""
         result = []
         for g in await s.db.get_groups():
             safe = _group_safe(g)
-            safe["unread_count"] = await s.db.get_group_unread_count(g["id"])
+            safe["unread_count"] = await s.db.get_group_unread_count(g["id"], our_key)
             result.append(safe)
         return result
 

@@ -318,8 +318,11 @@ async function handleEvent(event) {
         }
     } else if (event.type === "group_post") {
         if (currentGroup && event.group_id === currentGroup.id) {
-            loadPosts(currentGroup);
+            await loadPosts(currentGroup);
+            // Group is open — mark as read so badge doesn't flicker
+            try { await api("POST", `/api/groups/${event.group_id}/read`); } catch (_) {}
         }
+        loadGroups();  // refresh badge for all groups
     } else if (event.type === "group_invite") {
         loadGroups();
         showToast("You were invited to a group");
@@ -638,10 +641,10 @@ async function openGroup(group) {
     document.getElementById("member-list-panel").classList.add("hidden");
 
     showPanel("group");
-    // Mark group as read and refresh sidebar badge
+    await loadPosts(group);
+    // Mark as read AFTER loading posts so last_read_at is >= all visible post timestamps
     try { await api("POST", `/api/groups/${group.id}/read`); } catch (_) {}
     await loadGroups();
-    await loadPosts(group);
 }
 
 async function loadPosts(group) {
