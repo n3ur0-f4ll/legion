@@ -336,11 +336,13 @@ async function handleEvent(event) {
             if (!memberPanel.classList.contains("hidden")) {
                 await loadMemberList();
             }
-            // System message using alias_hint when available (fix 1)
+            // System message using alias_hint when available
             const name = event.alias_hint
                 ? esc(event.alias_hint)
                 : (event.public_key || "").slice(0, 10) + "…";
-            const action = event.op === "add" ? "joined the group" : "was removed from the group";
+            const action = event.op === "add"
+                ? "joined the group"
+                : event.voluntary ? "left the group" : "was removed from the group";
             appendSystemPost(`${name} ${action}`);
         }
         loadGroups();

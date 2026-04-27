@@ -470,9 +470,14 @@ def create_app(state: AppState) -> FastAPI:
         return _group_safe(await groups.create_group(s.db, identity, req.name))
 
     @app.delete("/api/groups/{group_id}", status_code=204)
-    async def delete_group(group_id: str, s: AppState = Depends(get_state)):
+    async def delete_group(group_id: str, deps=Depends(require_identity)):
+        s, identity = deps
         if await s.db.get_group(group_id) is None:
             raise HTTPException(status_code=404, detail="Group not found")
+        # Notify all members before deleting locally
+        broadcasts = await groups.leave_group(s.db, identity, group_id)
+        for msg, onion in broadcasts:
+            await s.delivery_queue.enqueue(msg, onion, via_relay=False)
         await s.db.delete_group(group_id)
 
     @app.get("/api/groups/{group_id}/members")

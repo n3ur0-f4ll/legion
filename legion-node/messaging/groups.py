@@ -356,6 +356,56 @@ async def remove_member(
     return new_key, broadcasts
 
 
+async def leave_group(
+    db: Database,
+    identity: Identity,
+    group_id: str,
+    ttl: int = DEFAULT_TTL,
+) -> list[tuple[dict, str]]:
+    """Build leave notifications for all other group members.
+
+    The leaving member signs their own departure — only they can claim to be leaving
+    (Ed25519 signature guarantees authenticity). The group is deleted from local DB
+    by the caller after queuing these broadcasts.
+
+    Returns list of (msg, destination_onion) to enqueue before deleting.
+    """
+    group = await db.get_group(group_id)
+    if group is None:
+        return []
+
+    members = await db.get_group_members(group_id)
+    broadcasts: list[tuple[dict, str]] = []
+    self_hex = identity.public_key.hex()
+
+    for member in members:
+        if member["public_key"] == self_hex:
+            continue
+        if not member["onion_address"]:
+            continue
+        m_pub = bytes.fromhex(member["public_key"])
+        payload = json.dumps({
+            "op": "remove",
+            "group_id": group_id,
+            "public_key": self_hex,
+            "group_name": group["name"],
+            "alias_hint": identity.alias,
+            "voluntary": True,
+        }).encode()
+        ct = crypto.encrypt(identity.private_key, m_pub, payload)
+        msg = build_message(
+            type=MSG_GROUP_MEMBER_UPDATE,
+            from_key=identity.public_key,
+            to_key=m_pub,
+            payload=ct,
+            private_key=identity.private_key,
+            ttl=ttl,
+        )
+        broadcasts.append((msg, member["onion_address"]))
+
+    return broadcasts
+
+
 async def handle_member_update(
     db: Database,
     identity: Identity,
@@ -384,16 +434,18 @@ async def handle_member_update(
     if group is None:
         return None  # unknown group — ignore
 
-    # Only accept roster updates from the group admin
-    if msg["from"] != group["admin_key"]:
-        return None
-
     op = update.get("op")
     pub = update.get("public_key", "")
     onion = update.get("onion", "")
     group_name = update.get("group_name", group["name"])
-
     alias_hint = update.get("alias_hint", "")
+    voluntary = update.get("voluntary", False)
+
+    # Accept roster changes only from the group admin — EXCEPT self-removal:
+    # a member may announce their own voluntary departure by signing with their own key.
+    is_self_leave = (op == "remove" and pub == msg["from"] and voluntary)
+    if msg["from"] != group["admin_key"] and not is_self_leave:
+        return None
 
     if op == "add" and pub:
         await db.save_group_member(
@@ -413,7 +465,8 @@ async def handle_member_update(
         else:
             await db.delete_group_member(group_id, pub)
             return {"op": "remove", "group_id": group_id, "public_key": pub,
-                    "group_name": group_name}
+                    "alias_hint": alias_hint, "group_name": group_name,
+                    "voluntary": voluntary}
 
     return None
 
