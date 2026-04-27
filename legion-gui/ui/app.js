@@ -324,24 +324,24 @@ async function handleEvent(event) {
         loadGroups();
         showToast("You were invited to a group");
     } else if (event.type === "group_member_update") {
-        // Fix 1 & 2 & 4
         if (event.op === "removed_self") {
-            // We were removed from the group
             showToast(`You were removed from "${esc(event.group_name || "a group")}"`);
             if (currentGroup && currentGroup.id === event.group_id) {
                 currentGroup = null;
                 showPanel("welcome");
             }
         } else if (currentGroup && event.group_id === currentGroup.id) {
-            // Fix 4: only refresh when it's the current group
+            // Refresh member list if open (fix 4)
             const memberPanel = document.getElementById("member-list-panel");
             if (!memberPanel.classList.contains("hidden")) {
                 await loadMemberList();
             }
-            // Fix 2: system message in the post list
-            const label = event.op === "add" ? "joined the group" : "left the group";
-            const key = event.public_key || "";
-            appendSystemPost(`${key.slice(0, 10)}… ${label}`);
+            // System message using alias_hint when available (fix 1)
+            const name = event.alias_hint
+                ? esc(event.alias_hint)
+                : (event.public_key || "").slice(0, 10) + "…";
+            const action = event.op === "add" ? "joined the group" : "was removed from the group";
+            appendSystemPost(`${name} ${action}`);
         }
         loadGroups();
     } else if (event.type === "group_key_update") {

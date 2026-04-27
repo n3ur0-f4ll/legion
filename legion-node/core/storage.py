@@ -316,11 +316,13 @@ class Database:
     async def save_group_member(
         self, group_id: str, public_key: str, added_at: int,
         onion_address: str = "",
+        alias_hint: str = "",
     ) -> None:
         await self._conn.execute(
             "INSERT OR REPLACE INTO group_members "
-            "(group_id, public_key, onion_address, added_at) VALUES (?, ?, ?, ?)",
-            (group_id, public_key, onion_address, added_at),
+            "(group_id, public_key, onion_address, alias_hint, added_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (group_id, public_key, onion_address, alias_hint, added_at),
         )
         await self._conn.commit()
 
@@ -468,6 +470,7 @@ async def _apply_schema(conn: aiosqlite.Connection) -> None:
         "ALTER TABLE messages ADD COLUMN mime_type TEXT DEFAULT NULL",
         "ALTER TABLE identity ADD COLUMN default_ttl INTEGER DEFAULT 604800",
         "ALTER TABLE group_members ADD COLUMN onion_address TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE group_members ADD COLUMN alias_hint TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE groups ADD COLUMN last_read_at INTEGER DEFAULT 0",
     ):
         try:

@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS group_members (
     group_id        TEXT NOT NULL,
     public_key      TEXT NOT NULL,
     onion_address   TEXT NOT NULL DEFAULT '',
+    alias_hint      TEXT NOT NULL DEFAULT '',
     added_at        INTEGER NOT NULL,
     PRIMARY KEY (group_id, public_key)
 );

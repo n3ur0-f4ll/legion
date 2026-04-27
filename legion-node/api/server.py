@@ -485,11 +485,12 @@ def create_app(state: AppState) -> FastAPI:
         our_key = s.identity.public_key.hex() if s.identity else ""
         for m in members:
             contact = await s.db.get_contact(m["public_key"])
-            # Prefer contact alias; fall back to own alias for self; else None
-            if contact:
-                alias = contact["alias"]
+            if contact and contact["alias"]:
+                alias = contact["alias"]                      # user's own label — highest priority
             elif m["public_key"] == our_key and s.identity:
-                alias = s.identity.alias + " (you)"
+                alias = s.identity.alias + " (you)"          # self
+            elif m.get("alias_hint"):
+                alias = m["alias_hint"]                       # hint from invite roster
             else:
                 alias = None
             result.append({
@@ -562,11 +563,20 @@ def create_app(state: AppState) -> FastAPI:
         group = await s.db.get_group(group_id)
         group_key = group["group_key"] if group else None
         posts = await groups.get_posts(s.db, group_id)
+        # Build alias_hint lookup from group_members to avoid per-post DB call
+        members_list = await s.db.get_group_members(group_id)
+        hints = {m["public_key"]: m.get("alias_hint", "") for m in members_list}
+
         result = []
         for row in posts:
             decrypted = _decrypt_post(row, group_key)
             contact = await s.db.get_contact(row["author_key"])
-            decrypted["author_alias"] = contact["alias"] if contact else None
+            if contact and contact["alias"]:
+                decrypted["author_alias"] = contact["alias"]
+            elif hints.get(row["author_key"]):
+                decrypted["author_alias"] = hints[row["author_key"]]
+            else:
+                decrypted["author_alias"] = None
             result.append(decrypted)
         return result
 

@@ -76,10 +76,11 @@ async def create_group(
         is_admin=True,
         created_at=now,
     )
-    # Store admin's own onion so it's included in future invite rosters
+    # Store admin's own onion and alias so they're included in future invite rosters
     await db.save_group_member(
         group_id, identity.public_key.hex(), now,
         onion_address=identity.onion_address,
+        alias_hint=identity.alias,
     )
 
     return {
@@ -117,16 +118,32 @@ async def invite_member(
     member_hex = member_public_key.hex()
     existing_members = await db.get_group_members(group_id)
 
+    # Build roster with alias_hints: prefer contact alias, fall back to stored hint
+    roster = []
+    for m in existing_members:
+        if m["public_key"] == member_hex:
+            continue  # don't include the invitee themselves
+        if m["public_key"] == identity.public_key.hex():
+            hint = identity.alias  # admin's own alias
+        else:
+            contact = await db.get_contact(m["public_key"])
+            hint = contact["alias"] if contact else (m.get("alias_hint") or "")
+        roster.append({
+            "public_key": m["public_key"],
+            "onion": m["onion_address"],
+            "alias_hint": hint,
+        })
+
+    # Resolve alias_hint for the new member (used in group_member_update broadcasts)
+    new_member_contact = await db.get_contact(member_hex)
+    new_member_alias = new_member_contact["alias"] if new_member_contact else ""
+
     # Build invite payload: group key + full member roster (Box-encrypted for invitee)
     plaintext = json.dumps({
         "group_id": group_id,
         "name": group["name"],
         "key": base64.b64encode(group["group_key"]).decode(),
-        "members": [
-            {"public_key": m["public_key"], "onion": m["onion_address"]}
-            for m in existing_members
-            if m["public_key"] != member_hex  # don't include the invitee themselves
-        ],
+        "members": roster,
     }).encode()
 
     ciphertext = crypto.encrypt(identity.private_key, member_public_key, plaintext)
@@ -141,7 +158,11 @@ async def invite_member(
 
     # Add new member to admin's group_members before broadcasting
     now = int(time.time())
-    await db.save_group_member(group_id, member_hex, now, onion_address=member_onion)
+    await db.save_group_member(
+        group_id, member_hex, now,
+        onion_address=member_onion,
+        alias_hint=new_member_alias,
+    )
 
     # Broadcast group_member_update(op=add) to all existing members
     update_msgs = []
@@ -156,6 +177,8 @@ async def invite_member(
             "group_id": group_id,
             "public_key": member_hex,
             "onion": member_onion,
+            "alias_hint": new_member_alias,
+            "group_name": group["name"],
         }).encode()
         ciphertext_upd = crypto.encrypt(identity.private_key, m_pub, update_payload)
         msg = build_message(
@@ -207,11 +230,12 @@ async def accept_invite(
         created_at=now,
     )
 
-    # Save all members from the roster — this includes the admin with their onion address.
-    # Do not make a separate admin save that could overwrite roster data with empty onion.
+    # Save all members from the roster — includes admin's onion and alias_hints.
     for m in members:
         await db.save_group_member(
-            group_id, m["public_key"], now, onion_address=m.get("onion", "")
+            group_id, m["public_key"], now,
+            onion_address=m.get("onion", ""),
+            alias_hint=m.get("alias_hint", ""),
         )
 
     # Add self only if not already present — our own onion is not critical for routing
@@ -369,12 +393,16 @@ async def handle_member_update(
     onion = update.get("onion", "")
     group_name = update.get("group_name", group["name"])
 
+    alias_hint = update.get("alias_hint", "")
+
     if op == "add" and pub:
         await db.save_group_member(
-            group_id, pub, int(time.time()), onion_address=onion
+            group_id, pub, int(time.time()),
+            onion_address=onion,
+            alias_hint=alias_hint,
         )
         return {"op": "add", "group_id": group_id, "public_key": pub,
-                "group_name": group_name}
+                "alias_hint": alias_hint, "group_name": group_name}
 
     elif op == "remove" and pub:
         if pub == identity.public_key.hex():

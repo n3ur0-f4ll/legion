@@ -1,1 +1,1 @@
-# LEGION - Decentralized. Anonimous. Yours.
+# LEGION - Decentralized. Anonymous. Yours.
