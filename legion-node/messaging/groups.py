@@ -76,8 +76,10 @@ async def create_group(
         is_admin=True,
         created_at=now,
     )
+    # Store admin's own onion so it's included in future invite rosters
     await db.save_group_member(
-        group_id, identity.public_key.hex(), now, onion_address=""
+        group_id, identity.public_key.hex(), now,
+        onion_address=identity.onion_address,
     )
 
     return {
@@ -205,18 +207,15 @@ async def accept_invite(
         created_at=now,
     )
 
-    # Save all members from the roster (they have onion addresses for peer-to-peer delivery)
+    # Save all members from the roster — this includes the admin with their onion address.
+    # Do not make a separate admin save that could overwrite roster data with empty onion.
     for m in members:
         await db.save_group_member(
             group_id, m["public_key"], now, onion_address=m.get("onion", "")
         )
 
-    # Add the admin (sender) as a member with their onion from contacts (if available)
-    admin_contact = await db.get_contact(msg["from"])
-    admin_onion = admin_contact["onion_address"] if admin_contact else ""
-    await db.save_group_member(group_id, msg["from"], now, onion_address=admin_onion)
-
-    # Add self only if not already present — avoid overwriting onion stored by admin
+    # Add self only if not already present — our own onion is not critical for routing
+    # (others have our onion from the invite payload the admin sent them)
     self_hex = identity.public_key.hex()
     current = await db.get_group_members(group_id)
     if not any(m["public_key"] == self_hex for m in current):

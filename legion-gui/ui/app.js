@@ -962,14 +962,14 @@ async function loadMemberList() {
             const div = document.createElement("div");
             div.className = "member-item";
             const adminBadge = m.is_admin ? `<span class="member-admin-badge">admin</span>` : "";
+            // Fix 2: show alias if available, fall back to truncated key
+            const displayName = m.alias
+                ? esc(m.alias)
+                : `<span style="color:var(--text-secondary)">${m.public_key.slice(0, 20)}…</span>`;
             const removeBtn = (currentGroup.is_admin && !m.is_admin)
-                ? `<button class="btn-remove-member" title="Remove member" data-key="${m.public_key}">×</button>`
+                ? `<button class="btn-remove-member" title="Remove member">×</button>`
                 : "";
-            div.innerHTML = `
-                ${adminBadge}
-                <span class="member-key">${m.public_key.slice(0, 24)}…</span>
-                ${removeBtn}
-            `;
+            div.innerHTML = `${adminBadge}<span class="member-key">${displayName}</span>${removeBtn}`;
             const btn = div.querySelector(".btn-remove-member");
             if (btn) btn.addEventListener("click", () => removeMember(m.public_key));
             list.appendChild(div);
@@ -1049,6 +1049,9 @@ async function inviteMember() {
         });
         closeModal("modal-invite");
         showToast("Invitation sent");
+        // Fix 1: system message visible to admin immediately after inviting
+        const label = sel.selectedOptions[0]?.textContent || pubkey.slice(0, 10) + "…";
+        appendSystemPost(`${esc(label)} was invited to the group`);
         await loadMemberList();
     } catch (err) {
         showError(errEl, err.message);

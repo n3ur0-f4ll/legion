@@ -481,15 +481,25 @@ def create_app(state: AppState) -> FastAPI:
         if group is None:
             raise HTTPException(status_code=404, detail="Group not found")
         members = await s.db.get_group_members(group_id)
-        return [
-            {
+        result = []
+        our_key = s.identity.public_key.hex() if s.identity else ""
+        for m in members:
+            contact = await s.db.get_contact(m["public_key"])
+            # Prefer contact alias; fall back to own alias for self; else None
+            if contact:
+                alias = contact["alias"]
+            elif m["public_key"] == our_key and s.identity:
+                alias = s.identity.alias + " (you)"
+            else:
+                alias = None
+            result.append({
                 "public_key": m["public_key"],
                 "onion_address": m["onion_address"],
                 "is_admin": m["public_key"] == group["admin_key"],
                 "added_at": m["added_at"],
-            }
-            for m in members
-        ]
+                "alias": alias,
+            })
+        return result
 
     @app.delete("/api/groups/{group_id}/members/{member_key}", status_code=204)
     async def remove_group_member(
