@@ -62,13 +62,20 @@ class Database:
     # ------------------------------------------------------------------
 
     async def panic_wipe(self) -> None:
-        """Panic button — irreversibly delete all data from all tables."""
+        """Panic button — irreversibly delete all data from all tables.
+
+        After DELETE, VACUUM rewrites the database file from scratch so that
+        deleted rows are not recoverable from freed SQLite pages (forensic resistance).
+        """
         tables = [
             "delivery_queue", "group_posts", "group_members", "groups",
             "messages", "contacts", "relay_config", "identity",
         ]
         for table in tables:
             await self._conn.execute(f"DELETE FROM {table}")
+        await self._conn.commit()
+        # VACUUM rewrites the entire db file — freed pages (deleted data) are not copied
+        await self._conn.execute("VACUUM")
         await self._conn.commit()
 
     async def save_identity(
