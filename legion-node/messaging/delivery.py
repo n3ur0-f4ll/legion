@@ -20,11 +20,8 @@
 Kolejka dostarczania wiadomości i logika retry.
 
 Gdy dostarczenie wiadomości nie powiedzie się (odbiorca offline), wiadomość
-trafia do kolejki. Kolejka próbuje ponownie według harmonogramu:
-[60, 300, 900, 3600, 21600, 86400] sekund między próbami.
-
-Po wyczerpaniu harmonogramu wiadomość zostaje w kolejce bez dalszych
-automatycznych prób — użytkownik może ją usunąć ręcznie.
+trafia do kolejki. Kolejka próbuje ponownie co _LOOP_INTERVAL sekund,
+bez limitu liczby prób, dopóki nie dotrze lub użytkownik jej nie anuluje.
 """
 
 from __future__ import annotations
@@ -40,12 +37,10 @@ from core.storage import Database
 
 logger = logging.getLogger(__name__)
 
-RETRY_SCHEDULE = [60, 300, 900, 3600, 21600, 86400]
-
 Sender = Callable[[dict, str], Awaitable[None]]  # (msg_dict, onion_address) -> None
 OnDelivered = Callable[[str], Awaitable[None]]   # (message_id) -> None
 
-_LOOP_INTERVAL = 10  # seconds between queue sweeps
+_LOOP_INTERVAL = 10  # seconds between queue sweeps — also the retry interval
 
 
 class DeliveryQueue:
@@ -174,11 +169,8 @@ class DeliveryQueue:
                     pass
             return True
         except Exception:
-            retry_count = entry["retry_count"]
-            if retry_count < len(RETRY_SCHEDULE):
-                next_retry = now + RETRY_SCHEDULE[retry_count]
-                await self._db.update_retry(entry["id"], next_retry)
-            # else: leave in queue, no more automatic retries
+            # Retry in _LOOP_INTERVAL seconds — indefinitely until delivered or cancelled
+            await self._db.update_retry(entry["id"], now + _LOOP_INTERVAL)
             return False
 
 

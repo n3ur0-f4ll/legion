@@ -53,6 +53,7 @@ from core.identity import (
     generate as generate_identity,
 )
 from core.protocol import (
+    DEFAULT_TTL,
     validate_contact_card,
     MalformedMessage,
     InvalidSignature,
@@ -145,6 +146,7 @@ class SendMessageRequest(BaseModel):
     file_data: str | None = None   # base64-encoded file bytes
     file_name: str | None = None
     mime_type: str | None = None
+    ttl: int | None = None         # per-message TTL override (seconds); None = use identity default
 
 
 class CreateGroupRequest(BaseModel):
@@ -166,6 +168,13 @@ class UnlockRequest(BaseModel):
 
 class AliasRequest(BaseModel):
     alias: str
+
+
+class DefaultTtlRequest(BaseModel):
+    ttl: int
+
+_TTL_MIN = 3_600      # 1 hour
+_TTL_MAX = 2_592_000  # 30 days
 
 
 # ------------------------------------------------------------------
@@ -255,6 +264,7 @@ def create_app(state: AppState) -> FastAPI:
             "public_key": s.identity.public_key.hex(),
             "onion_address": s.identity.onion_address,
             "alias": s.identity.alias,
+            "default_ttl": int(row.get("default_ttl") or DEFAULT_TTL),
         }
 
     @app.post("/api/identity/create", status_code=201)
@@ -280,16 +290,26 @@ def create_app(state: AppState) -> FastAPI:
             "public_key": identity.public_key.hex(),
             "onion_address": identity.onion_address,
             "alias": identity.alias,
+            "default_ttl": DEFAULT_TTL,
         }
 
     @app.get("/api/identity")
     async def get_identity(deps=Depends(require_identity)):
-        _, identity = deps
+        s, identity = deps
+        row = await s.db.load_identity()
         return {
             "public_key": identity.public_key.hex(),
             "onion_address": identity.onion_address,
             "alias": identity.alias,
+            "default_ttl": int(row.get("default_ttl") or DEFAULT_TTL) if row else DEFAULT_TTL,
         }
+
+    @app.patch("/api/identity/default_ttl")
+    async def update_default_ttl(req: DefaultTtlRequest, deps=Depends(require_identity)):
+        s, _ = deps
+        ttl = max(_TTL_MIN, min(req.ttl, _TTL_MAX))
+        await s.db.update_identity_default_ttl(ttl)
+        return {"default_ttl": ttl}
 
     @app.delete("/api/identity", status_code=204)
     async def panic_delete(s: AppState = Depends(get_state)):
@@ -378,6 +398,13 @@ def create_app(state: AppState) -> FastAPI:
     # Messages
     # ------------------------------------------------------------------
 
+    @app.delete("/api/messages/{message_id}", status_code=204)
+    async def cancel_message(message_id: str, s: AppState = Depends(get_state)):
+        """Cancel delivery retries for a queued message and mark it as failed."""
+        await s.db.cancel_queued(message_id)
+        await s.db.update_message_status(message_id, "failed")
+        s.push_network_log("warn", "delivery", f"✕ Cancelled {message_id[:8]}…")
+
     @app.post("/api/messages/{public_key}/read", status_code=204)
     async def mark_read(public_key: str, deps=Depends(require_identity)):
         s, identity = deps
@@ -399,6 +426,13 @@ def create_app(state: AppState) -> FastAPI:
         except ValueError:
             raise HTTPException(status_code=422, detail="Invalid public key")
 
+        # Resolve TTL: per-message override → identity default → protocol default
+        if req.ttl is not None:
+            ttl = max(_TTL_MIN, min(req.ttl, _TTL_MAX))
+        else:
+            row = await s.db.load_identity()
+            ttl = int(row.get("default_ttl") or DEFAULT_TTL) if row else DEFAULT_TTL
+
         if req.file_data is not None:
             if not req.file_name or not req.mime_type:
                 raise HTTPException(status_code=422, detail="file_name and mime_type required")
@@ -406,12 +440,12 @@ def create_app(state: AppState) -> FastAPI:
                 file_bytes = base64.b64decode(req.file_data)
                 msg = await private.send_file(
                     s.db, identity, recipient_key,
-                    file_bytes, req.file_name, req.mime_type,
+                    file_bytes, req.file_name, req.mime_type, ttl=ttl,
                 )
             except FileError as exc:
                 raise HTTPException(status_code=422, detail=str(exc))
         else:
-            msg = await private.send(s.db, identity, recipient_key, req.text or "")
+            msg = await private.send(s.db, identity, recipient_key, req.text or "", ttl=ttl)
 
         destination_onion, via_relay = await choose_destination(s.db, req.onion)
         await s.delivery_queue.enqueue(msg, destination_onion, via_relay=via_relay)
@@ -423,7 +457,12 @@ def create_app(state: AppState) -> FastAPI:
 
     @app.get("/api/groups")
     async def get_groups(s: AppState = Depends(get_state)):
-        return [_group_safe(g) for g in await s.db.get_groups()]
+        result = []
+        for g in await s.db.get_groups():
+            safe = _group_safe(g)
+            safe["unread_count"] = await s.db.get_group_unread_count(g["id"])
+            result.append(safe)
+        return result
 
     @app.post("/api/groups", status_code=201)
     async def create_group(req: CreateGroupRequest, deps=Depends(require_identity)):
@@ -435,6 +474,47 @@ def create_app(state: AppState) -> FastAPI:
         if await s.db.get_group(group_id) is None:
             raise HTTPException(status_code=404, detail="Group not found")
         await s.db.delete_group(group_id)
+
+    @app.get("/api/groups/{group_id}/members")
+    async def get_group_members(group_id: str, s: AppState = Depends(get_state)):
+        group = await s.db.get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="Group not found")
+        members = await s.db.get_group_members(group_id)
+        return [
+            {
+                "public_key": m["public_key"],
+                "onion_address": m["onion_address"],
+                "is_admin": m["public_key"] == group["admin_key"],
+                "added_at": m["added_at"],
+            }
+            for m in members
+        ]
+
+    @app.delete("/api/groups/{group_id}/members/{member_key}", status_code=204)
+    async def remove_group_member(
+        group_id: str,
+        member_key: str,
+        deps=Depends(require_identity),
+    ):
+        s, identity = deps
+        group = await s.db.get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="Group not found")
+        try:
+            member_pub = bytes.fromhex(member_key)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid public key")
+        try:
+            _, broadcasts = await groups.remove_member(
+                s.db, identity, group_id, member_pub
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc))
+
+        for msg, onion in broadcasts:
+            await s.delivery_queue.enqueue(msg, onion, via_relay=False)
+        s.push_network_log("warn", "msg", f"Member removed from group, key rotated")
 
     @app.post("/api/groups/{group_id}/invite", status_code=201)
     async def invite_member(
@@ -449,14 +529,23 @@ def create_app(state: AppState) -> FastAPI:
             raise HTTPException(status_code=422, detail="Invalid public key")
 
         try:
-            msg = await groups.invite_member(s.db, identity, group_id, member_key)
+            invite_msg, update_msgs = await groups.invite_member(
+                s.db, identity, group_id, member_key, req.onion
+            )
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc))
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc))
 
-        await s.delivery_queue.enqueue(msg, req.onion, via_relay=False)
-        return {"id": msg["id"], "status": "queued"}
+        await s.delivery_queue.enqueue(invite_msg, req.onion, via_relay=False)
+        for msg, onion in update_msgs:
+            await s.delivery_queue.enqueue(msg, onion, via_relay=False)
+        return {"id": invite_msg["id"], "status": "queued"}
+
+    @app.post("/api/groups/{group_id}/read", status_code=204)
+    async def mark_group_read(group_id: str, s: AppState = Depends(get_state)):
+        import time as _time
+        await s.db.mark_group_read(group_id, int(_time.time()))
 
     @app.get("/api/groups/{group_id}/posts")
     async def get_posts(group_id: str, s: AppState = Depends(get_state)):
@@ -477,16 +566,16 @@ def create_app(state: AppState) -> FastAPI:
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc))
 
-        # Deliver to all group members
+        # Deliver peer-to-peer using onion_address stored in group_members
         members = await s.db.get_group_members(group_id)
         our_hex = identity.public_key.hex()
         for member in members:
             if member["public_key"] == our_hex:
                 continue
-            contact = await s.db.get_contact(member["public_key"])
-            if contact:
-                dst, via_relay = await choose_destination(s.db, contact["onion_address"])
-                await s.delivery_queue.enqueue(msg, dst, via_relay=via_relay)
+            if not member["onion_address"]:
+                continue
+            dst, via_relay = await choose_destination(s.db, member["onion_address"])
+            await s.delivery_queue.enqueue(msg, dst, via_relay=via_relay)
 
         return {"id": msg["id"], "status": "queued"}
 
@@ -598,6 +687,22 @@ def make_message_handler(state: AppState):
                     "id": msg["id"],
                 })
                 state.push_network_log("msg", "msg", f"← Post in group {group_id[:8]}…")
+            except Exception:
+                pass
+
+        elif msg_type == "group_member_update":
+            try:
+                await groups.handle_member_update(state.db, state.identity, msg)
+                state.push_event("group_member_update", {"from": sender})
+                state.push_network_log("info", "msg", f"← Group roster updated by {sender[:8]}…")
+            except Exception:
+                pass
+
+        elif msg_type == "group_key_update":
+            try:
+                await groups.handle_key_update(state.db, state.identity, msg)
+                state.push_event("group_key_update", {"from": sender})
+                state.push_network_log("info", "msg", f"← Group key rotated by {sender[:8]}…")
             except Exception:
                 pass
 

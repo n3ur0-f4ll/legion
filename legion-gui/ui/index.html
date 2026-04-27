@@ -134,6 +134,12 @@
                     <label class="btn-attach" title="Attach file (max 5 MB)">
                         📎<input id="msg-file" type="file" style="display:none" onchange="handleFileSelected(this)">
                     </label>
+                    <div class="ttl-picker">
+                        <button class="btn-ttl" id="btn-ttl" onclick="toggleTtlPicker()" title="Message expiry">
+                            <span id="ttl-label">7d</span> ▾
+                        </button>
+                        <div class="ttl-dropdown hidden" id="ttl-dropdown"></div>
+                    </div>
                     <button class="btn-send" onclick="sendMessage()">Send</button>
                 </div>
                 <div id="file-preview" class="file-preview hidden">
@@ -146,9 +152,14 @@
             <div id="panel-group" class="panel hidden">
                 <div class="panel-header">
                     <span id="group-name" class="panel-title"></span>
-                    <div id="group-admin-actions" class="hidden">
-                        <button class="btn-small" onclick="showInviteMember()">Invite</button>
+                    <button class="btn-small" id="btn-members" onclick="toggleMemberList()">Members</button>
+                    <div id="group-admin-actions" class="hidden" style="display:flex;gap:6px">
+                        <button class="btn-small" onclick="showInviteMember()">+ Invite</button>
                     </div>
+                </div>
+                <!-- Member list (collapsible) -->
+                <div id="member-list-panel" class="member-list-panel hidden">
+                    <div id="member-list"></div>
                 </div>
                 <div id="posts-list" class="messages-list"></div>
                 <div class="message-input-row">
@@ -224,6 +235,23 @@
                         <div id="relay-status" class="hint"></div>
                     </section>
 
+                    <section class="settings-section">
+                        <h3>Messages</h3>
+                        <p class="hint">Default expiry for all outgoing messages. Can be overridden per message.</p>
+                        <div class="settings-row">
+                            <label>Default expiry</label>
+                            <select id="settings-default-ttl" onchange="saveDefaultTtl()">
+                                <option value="3600">1 hour</option>
+                                <option value="21600">6 hours</option>
+                                <option value="86400">1 day</option>
+                                <option value="259200">3 days</option>
+                                <option value="604800">7 days</option>
+                                <option value="2592000">30 days</option>
+                            </select>
+                        </div>
+                        <div id="ttl-status" class="hint" style="margin-left:110px"></div>
+                    </section>
+
                     <section class="settings-section settings-danger">
                         <h3>Danger zone</h3>
                         <p class="hint">
@@ -274,8 +302,10 @@
 <div id="modal-invite" class="modal hidden">
     <div class="modal-box">
         <h3>Invite member</h3>
-        <p class="hint">Enter the public key of the contact to invite.</p>
-        <input id="invite-pubkey" type="text" placeholder="hex public key">
+        <p class="hint">Select a contact to invite to the group.</p>
+        <select id="invite-contact-select" style="width:100%">
+            <option value="">— select contact —</option>
+        </select>
         <div class="modal-actions">
             <button class="btn-secondary" onclick="closeModal('modal-invite')">Cancel</button>
             <button class="btn-primary" onclick="inviteMember()">Invite</button>

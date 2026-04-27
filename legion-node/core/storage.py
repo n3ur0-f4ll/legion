@@ -80,7 +80,9 @@ class Database:
         created_at: int,
     ) -> None:
         await self._conn.execute(
-            "INSERT OR REPLACE INTO identity VALUES (?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO identity "
+            "(public_key, private_key, onion_address, alias, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
             (public_key, private_key, onion_address, alias, created_at),
         )
         await self._conn.commit()
@@ -88,6 +90,12 @@ class Database:
     async def update_identity_alias(self, alias: str) -> None:
         await self._conn.execute(
             "UPDATE identity SET alias = ?", (alias,)
+        )
+        await self._conn.commit()
+
+    async def update_identity_default_ttl(self, ttl: int) -> None:
+        await self._conn.execute(
+            "UPDATE identity SET default_ttl = ?", (ttl,)
         )
         await self._conn.commit()
 
@@ -273,7 +281,9 @@ class Database:
         created_at: int,
     ) -> None:
         await self._conn.execute(
-            "INSERT OR REPLACE INTO groups VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO groups "
+            "(id, name, group_key, admin_key, is_admin, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
             (id, name, group_key, admin_key, int(is_admin), created_at),
         )
         await self._conn.commit()
@@ -304,13 +314,42 @@ class Database:
     # ------------------------------------------------------------------
 
     async def save_group_member(
-        self, group_id: str, public_key: str, added_at: int
+        self, group_id: str, public_key: str, added_at: int,
+        onion_address: str = "",
     ) -> None:
         await self._conn.execute(
-            "INSERT OR IGNORE INTO group_members VALUES (?, ?, ?)",
-            (group_id, public_key, added_at),
+            "INSERT OR REPLACE INTO group_members "
+            "(group_id, public_key, onion_address, added_at) VALUES (?, ?, ?, ?)",
+            (group_id, public_key, onion_address, added_at),
         )
         await self._conn.commit()
+
+    async def update_group_key(self, group_id: str, new_key: bytes) -> None:
+        """Replace the group's symmetric key after member removal + rotation."""
+        await self._conn.execute(
+            "UPDATE groups SET group_key = ? WHERE id = ?", (new_key, group_id)
+        )
+        await self._conn.commit()
+
+    async def mark_group_read(self, group_id: str, now: int) -> None:
+        await self._conn.execute(
+            "UPDATE groups SET last_read_at = ? WHERE id = ?", (now, group_id)
+        )
+        await self._conn.commit()
+
+    async def get_group_unread_count(self, group_id: str) -> int:
+        async with self._conn.execute(
+            "SELECT last_read_at FROM groups WHERE id = ?", (group_id,)
+        ) as cur:
+            row = await cur.fetchone()
+        last_read = row["last_read_at"] if row else 0
+        async with self._conn.execute(
+            "SELECT COUNT(*) as cnt FROM group_posts "
+            "WHERE group_id = ? AND timestamp > ?",
+            (group_id, last_read),
+        ) as cur:
+            row = await cur.fetchone()
+        return row["cnt"] if row else 0
 
     async def get_group_members(self, group_id: str) -> list[dict]:
         async with self._conn.execute(
@@ -407,6 +446,13 @@ class Database:
         )
         await self._conn.commit()
 
+    async def cancel_queued(self, message_id: str) -> None:
+        """Remove all delivery queue entries for a message (user-initiated cancel)."""
+        await self._conn.execute(
+            "DELETE FROM delivery_queue WHERE message_id = ?", (message_id,)
+        )
+        await self._conn.commit()
+
 
 # ------------------------------------------------------------------
 # internal helpers
@@ -420,6 +466,9 @@ async def _apply_schema(conn: aiosqlite.Connection) -> None:
         "ALTER TABLE messages ADD COLUMN read_at INTEGER DEFAULT NULL",
         "ALTER TABLE messages ADD COLUMN file_name TEXT DEFAULT NULL",
         "ALTER TABLE messages ADD COLUMN mime_type TEXT DEFAULT NULL",
+        "ALTER TABLE identity ADD COLUMN default_ttl INTEGER DEFAULT 604800",
+        "ALTER TABLE group_members ADD COLUMN onion_address TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE groups ADD COLUMN last_read_at INTEGER DEFAULT 0",
     ):
         try:
             await conn.execute(migration)

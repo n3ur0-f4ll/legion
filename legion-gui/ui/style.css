@@ -513,6 +513,130 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .status-icon.delivered{ color: var(--accent); }
 .status-icon.failed   { color: var(--error); }
 
+/* Group member list */
+.member-list-panel {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    max-height: 180px;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+.member-item:hover { background: var(--bg-tertiary); }
+.member-admin-badge {
+    font-size: 10px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: 1px 4px;
+    flex-shrink: 0;
+}
+.member-key {
+    color: var(--text-secondary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.btn-remove-member {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 2px 5px;
+    cursor: pointer;
+    opacity: 0;
+    flex-shrink: 0;
+    transition: opacity 0.15s, color 0.15s;
+}
+.member-item:hover .btn-remove-member { opacity: 1; }
+.btn-remove-member:hover { color: var(--error); opacity: 1; }
+
+/* TTL picker */
+.ttl-picker {
+    position: relative;
+    flex-shrink: 0;
+}
+.btn-ttl {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    padding: 5px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn-ttl:hover { border-color: var(--accent); color: var(--text-primary); opacity: 1; }
+.btn-ttl.custom { color: var(--accent); border-color: var(--accent); }
+
+.ttl-dropdown {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    z-index: 50;
+    min-width: 110px;
+    overflow: hidden;
+}
+.ttl-opt {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--text-primary);
+    font-size: 12px;
+    padding: 7px 12px;
+    text-align: left;
+    cursor: pointer;
+}
+.ttl-opt:hover { background: var(--bg-tertiary); opacity: 1; }
+.ttl-opt.active { color: var(--accent); }
+.ttl-opt.ttl-reset {
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+/* Settings select */
+.settings-row select {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 7px 10px;
+    cursor: pointer;
+    flex: 1;
+    outline: none;
+}
+.settings-row select:focus { border-color: var(--accent); }
+
+.btn-cancel-msg {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 0 2px;
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+}
+.message-bubble:hover .btn-cancel-msg { opacity: 1; }
+.btn-cancel-msg:hover { color: var(--error); opacity: 1; }
+
 .message-input-row {
     padding: 10px 12px;
     border-top: 1px solid var(--border);

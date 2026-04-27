@@ -127,6 +127,75 @@ treści wiadomości bez znajomości hasła (które jest potrzebne do odblokowani
 
 ---
 
+## Grupy czatowe
+
+### Model szyfrowania grupowego
+
+Grupa to **wspólny klucz symetryczny** (32 bajty, XSalsa20-Poly1305 / SecretBox)
+generowany losowo przez twórcę grupy. Każdy post grupowy jest szyfrowany tym kluczem
+i podpisany kluczem prywatnym autora.
+
+Co to oznacza w praktyce:
+
+- Treść postów jest widoczna wyłącznie dla posiadaczy klucza grupy
+- Każdy post jest indywidualnie podpisany — podszywanie się pod innego członka
+  jest kryptograficznie niemożliwe
+- Operator relay, węzły Tor ani żadna osoba trzecia nie może odczytać postów
+
+### Zapraszanie nowych członków
+
+Gdy admin zaprasza nową osobę, przesyła jej zaproszenie zawierające:
+
+- Klucz grupy zaszyfrowany kluczem publicznym nowego członka (X25519 + XSalsa20-Poly1305)
+- Listę aktualnych członków grupy (adresy `.onion` i klucze publiczne)
+- Metadane grupy (identyfikator, nazwa)
+
+**Cały payload zaproszenia jest szyfrowany kluczem publicznym odbiorcy** —
+metadane grupy nie są widoczne w warstwie sieciowej dla żadnej strony trzeciej.
+Tylko zaproszony może odczytać zawartość zaproszenia.
+
+Po przyjęciu zaproszenia nowy członek może wysyłać posty bezpośrednio do każdego
+z pozostałych członków, bez pośrednictwa admina.
+
+### Równość członków w routingu
+
+Posty grupowe są dostarczane **peer-to-peer** od nadawcy do każdego członka
+bezpośrednio przez sieć Tor. Admin nie jest routerem — awaria lub niedostępność
+admina nie uniemożliwia komunikacji między pozostałymi członkami.
+
+### Rotacja klucza po wykluczeniu
+
+Gdy admin usuwa członka z grupy:
+
+1. Generowany jest **nowy losowy klucz grupy** (K₂)
+2. Nowy klucz jest przesyłany do każdego pozostałego członka osobno,
+   zaszyfrowany jego indywidualnym kluczem publicznym
+3. Wszystkie nowe posty używają wyłącznie K₂
+4. Wykluczona osoba traci możliwość odczytania nowych postów
+
+**Granica ochrony:** osoba wykluczona zachowuje klucz K₁, którym może
+odczytać posty z okresu gdy była członkiem. Jest to nieodłączna cecha
+symetrycznych systemów grupowych — całkowita forward secrecy wymagałaby
+mechanizmu ratchet (Signal-style) i byłaby wielokrotnie bardziej złożona.
+Rotacja klucza chroni **przyszłą** komunikację.
+
+Weryfikacja `group_key_update`: węzeł odbiorcy akceptuje nowy klucz tylko
+jeśli nadawca wiadomości jest adminem danej grupy zgodnie z lokalną bazą.
+
+### Zmiany w składzie grupy
+
+Gdy dołącza lub odchodzi członek, admin rozsyła do wszystkich pozostałych
+wiadomość `group_member_update` — zaszyfrowaną per-odbiorca kluczem publicznym.
+Każdy węzeł aktualizuje lokalną listę members niezależnie.
+
+### Co admin wie o grupie
+
+Admin zna adresy `.onion` i klucze publiczne wszystkich członków, których
+sam zaprosił. Jest to konieczne do dostarczania zaproszeń i updates.
+Relacja zaufania: admin = osoba która Cię zaprosiła.
+
+---
+
 ## Filtrowanie nadawców
 
 Legion akceptuje wiadomości wyłącznie od **znanych kontaktów**.

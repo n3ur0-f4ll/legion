@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS identity (
     private_key     BLOB NOT NULL,
     onion_address   TEXT NOT NULL,
     alias           TEXT NOT NULL,
-    created_at      INTEGER NOT NULL
+    created_at      INTEGER NOT NULL,
+    default_ttl     INTEGER DEFAULT 604800
 );
 
 CREATE TABLE IF NOT EXISTS relay_config (
@@ -41,12 +42,14 @@ CREATE TABLE IF NOT EXISTS groups (
     group_key       BLOB NOT NULL,
     admin_key       TEXT NOT NULL,
     is_admin        INTEGER DEFAULT 0,
-    created_at      INTEGER NOT NULL
+    created_at      INTEGER NOT NULL,
+    last_read_at    INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS group_members (
     group_id        TEXT NOT NULL,
     public_key      TEXT NOT NULL,
+    onion_address   TEXT NOT NULL DEFAULT '',
     added_at        INTEGER NOT NULL,
     PRIMARY KEY (group_id, public_key)
 );

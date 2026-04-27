@@ -44,12 +44,16 @@ DEFAULT_TTL = 604800  # 7 days in seconds
 MSG_PRIVATE = "msg"
 MSG_GROUP_POST = "group_post"
 MSG_GROUP_INVITE = "group_invite"
+MSG_GROUP_MEMBER_UPDATE = "group_member_update"  # admin broadcasts roster change
+MSG_GROUP_KEY_UPDATE = "group_key_update"         # admin broadcasts new key after rotation
 MSG_DELIVERY_ACK = "delivery_ack"
 MSG_CONTACT_CARD = "contact_card"
 
-_VALID_TYPES = frozenset(
-    {MSG_PRIVATE, MSG_GROUP_POST, MSG_GROUP_INVITE, MSG_DELIVERY_ACK, MSG_CONTACT_CARD}
-)
+_VALID_TYPES = frozenset({
+    MSG_PRIVATE, MSG_GROUP_POST, MSG_GROUP_INVITE,
+    MSG_GROUP_MEMBER_UPDATE, MSG_GROUP_KEY_UPDATE,
+    MSG_DELIVERY_ACK, MSG_CONTACT_CARD,
+})
 _REQUIRED_FIELDS = frozenset(
     {"v", "type", "id", "from", "to", "payload", "signature", "timestamp", "ttl"}
 )

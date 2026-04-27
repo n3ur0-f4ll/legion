@@ -17,24 +17,36 @@
 
 
 """
-Logika grup: tworzenie, zaproszenia, posty.
+Logika grup: tworzenie, zaproszenia, posty, rotacja klucza.
 
 Grupa to wspólny klucz symetryczny (SecretBox) znany wszystkim członkom.
-Admin tworzy grupę i szyfruje klucz grupy kluczem publicznym każdego nowego członka.
-Posty grupowe są szyfrowane kluczem grupy i podpisane kluczem autora.
-Rotacja klucza jest wymagana gdy członek opuszcza grupę.
+Każdy post jest szyfrowany tym kluczem i podpisany kluczem autora.
+
+Bezpieczeństwo zaproszenia:
+  Cały payload group_invite jest Box-szyfrowany (X25519) dla odbiorcy —
+  metadane grupy (id, nazwa, roster) nie są widoczne na warstwie sieciowej.
+  Zaproszenie zawiera listę członków z adresami .onion, dzięki czemu
+  nowy członek może wysyłać posty peer-to-peer bez pośrednictwa admina.
+
+Rotacja klucza:
+  Po usunięciu członka admin generuje nowy klucz i rozsyła go do każdego
+  pozostałego członka osobno przez group_key_update (Box-encrypted per-member).
+  Wykluczona osoba traci możliwość odczytu nowych postów.
 """
 
 from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import time
 
 from core import crypto
 from core.identity import Identity
 from core.protocol import (
     MSG_GROUP_INVITE,
+    MSG_GROUP_KEY_UPDATE,
+    MSG_GROUP_MEMBER_UPDATE,
     MSG_GROUP_POST,
     DEFAULT_TTL,
     build_message,
@@ -64,7 +76,9 @@ async def create_group(
         is_admin=True,
         created_at=now,
     )
-    await db.save_group_member(group_id, identity.public_key.hex(), now)
+    await db.save_group_member(
+        group_id, identity.public_key.hex(), now, onion_address=""
+    )
 
     return {
         "id": group_id,
@@ -81,13 +95,16 @@ async def invite_member(
     identity: Identity,
     group_id: str,
     member_public_key: bytes,
+    member_onion: str,
     ttl: int = DEFAULT_TTL,
-) -> dict:
-    """Build a signed group_invite message carrying the group key encrypted for the new member.
+) -> tuple[dict, list[dict]]:
+    """Build invite message and member-update broadcasts.
 
-    Raises PermissionError if the caller is not the group admin.
-    Raises LookupError if the group does not exist.
-    Returns the protocol message dict ready for delivery.
+    Returns (invite_msg, [group_member_update msgs for existing members]).
+    Adds the new member to admin's group_members immediately.
+
+    Raises PermissionError if caller is not admin.
+    Raises LookupError if group does not exist.
     """
     group = await db.get_group(group_id)
     if group is None:
@@ -95,24 +112,61 @@ async def invite_member(
     if group["admin_key"] != identity.public_key.hex():
         raise PermissionError("Only the group admin can invite members")
 
-    # Encrypt the group key with the new member's public key
-    encrypted_key = crypto.encrypt(
-        identity.private_key, member_public_key, group["group_key"]
-    )
+    member_hex = member_public_key.hex()
+    existing_members = await db.get_group_members(group_id)
 
-    # Pack group metadata + encrypted key into the invite payload
-    invite_payload = _pack_invite(group_id, group["name"], encrypted_key)
+    # Build invite payload: group key + full member roster (Box-encrypted for invitee)
+    plaintext = json.dumps({
+        "group_id": group_id,
+        "name": group["name"],
+        "key": base64.b64encode(group["group_key"]).decode(),
+        "members": [
+            {"public_key": m["public_key"], "onion": m["onion_address"]}
+            for m in existing_members
+            if m["public_key"] != member_hex  # don't include the invitee themselves
+        ],
+    }).encode()
 
-    msg = build_message(
+    ciphertext = crypto.encrypt(identity.private_key, member_public_key, plaintext)
+    invite_msg = build_message(
         type=MSG_GROUP_INVITE,
         from_key=identity.public_key,
         to_key=member_public_key,
-        payload=invite_payload,
+        payload=ciphertext,
         private_key=identity.private_key,
         ttl=ttl,
     )
 
-    return msg
+    # Add new member to admin's group_members before broadcasting
+    now = int(time.time())
+    await db.save_group_member(group_id, member_hex, now, onion_address=member_onion)
+
+    # Broadcast group_member_update(op=add) to all existing members
+    update_msgs = []
+    for member in existing_members:
+        if member["public_key"] == identity.public_key.hex():
+            continue  # skip self
+        if not member["onion_address"]:
+            continue  # skip members without onion (shouldn't happen, defensive)
+        m_pub = bytes.fromhex(member["public_key"])
+        update_payload = json.dumps({
+            "op": "add",
+            "group_id": group_id,
+            "public_key": member_hex,
+            "onion": member_onion,
+        }).encode()
+        ciphertext_upd = crypto.encrypt(identity.private_key, m_pub, update_payload)
+        msg = build_message(
+            type=MSG_GROUP_MEMBER_UPDATE,
+            from_key=identity.public_key,
+            to_key=m_pub,
+            payload=ciphertext_upd,
+            private_key=identity.private_key,
+            ttl=ttl,
+        )
+        update_msgs.append((msg, member["onion_address"]))
+
+    return invite_msg, update_msgs
 
 
 async def accept_invite(
@@ -123,6 +177,7 @@ async def accept_invite(
     """Process an incoming group_invite message and store the group locally.
 
     msg must already be validated by validate_message() before calling this.
+    Decrypts the Box-encrypted invite payload, saves group and full member roster.
     Raises ValueError if the invite is malformed or not addressed to this identity.
     Returns the stored group record.
     """
@@ -130,10 +185,15 @@ async def accept_invite(
         raise ValueError("Invite is not addressed to this identity")
 
     sender_public_key = bytes.fromhex(msg["from"])
-    invite_payload = base64.b64decode(msg["payload"])
+    ciphertext = base64.b64decode(msg["payload"])
 
-    group_id, group_name, encrypted_key = _unpack_invite(invite_payload)
-    group_key = crypto.decrypt(identity.private_key, sender_public_key, encrypted_key)
+    plaintext = crypto.decrypt(identity.private_key, sender_public_key, ciphertext)
+    invite = json.loads(plaintext)
+
+    group_id = invite["group_id"]
+    group_name = invite["name"]
+    group_key = base64.b64decode(invite["key"])
+    members = invite.get("members", [])
 
     now = int(time.time())
     await db.save_group(
@@ -144,12 +204,27 @@ async def accept_invite(
         is_admin=False,
         created_at=now,
     )
-    await db.save_group_member(group_id, identity.public_key.hex(), now)
+
+    # Save all members from the roster (they have onion addresses for peer-to-peer delivery)
+    for m in members:
+        await db.save_group_member(
+            group_id, m["public_key"], now, onion_address=m.get("onion", "")
+        )
+
+    # Add the admin (sender) as a member with their onion from contacts (if available)
+    admin_contact = await db.get_contact(msg["from"])
+    admin_onion = admin_contact["onion_address"] if admin_contact else ""
+    await db.save_group_member(group_id, msg["from"], now, onion_address=admin_onion)
+
+    # Add self only if not already present — avoid overwriting onion stored by admin
+    self_hex = identity.public_key.hex()
+    current = await db.get_group_members(group_id)
+    if not any(m["public_key"] == self_hex for m in current):
+        await db.save_group_member(group_id, self_hex, now, onion_address="")
 
     return {
         "id": group_id,
         "name": group_name,
-        "group_key": group_key,
         "admin_key": msg["from"],
         "is_admin": False,
         "created_at": now,
@@ -161,11 +236,15 @@ async def remove_member(
     identity: Identity,
     group_id: str,
     member_public_key: bytes,
-) -> bytes:
-    """Remove a member and rotate the group key.
+    ttl: int = DEFAULT_TTL,
+) -> tuple[bytes, list[tuple[dict, str]]]:
+    """Remove a member, rotate the group key, and build broadcast messages.
 
-    Raises PermissionError if the caller is not the group admin.
-    Returns the new group key — admin must re-invite remaining members.
+    Returns (new_group_key, [(msg, destination_onion), ...]) where msgs are
+    group_key_update and group_member_update messages to queue for all remaining members.
+
+    Raises PermissionError if caller is not admin.
+    Raises LookupError if group does not exist.
     """
     group = await db.get_group(group_id)
     if group is None:
@@ -173,19 +252,131 @@ async def remove_member(
     if group["admin_key"] != identity.public_key.hex():
         raise PermissionError("Only the group admin can remove members")
 
-    await db.delete_group_member(group_id, member_public_key.hex())
+    member_hex = member_public_key.hex()
+    await db.delete_group_member(group_id, member_hex)
 
+    # Generate and save new key immediately
     new_key = crypto.generate_group_key()
-    await db.save_group(
-        id=group_id,
-        name=group["name"],
-        group_key=new_key,
-        admin_key=group["admin_key"],
-        is_admin=True,
-        created_at=group["created_at"],
-    )
+    await db.update_group_key(group_id, new_key)
 
-    return new_key
+    # Build broadcasts to all remaining members
+    remaining = await db.get_group_members(group_id)
+    broadcasts: list[tuple[dict, str]] = []
+
+    for member in remaining:
+        if member["public_key"] == identity.public_key.hex():
+            continue
+        if not member["onion_address"]:
+            continue
+        m_pub = bytes.fromhex(member["public_key"])
+
+        # 1. New group key (Box-encrypted per member)
+        key_payload = json.dumps({
+            "group_id": group_id,
+            "new_key": base64.b64encode(new_key).decode(),
+        }).encode()
+        key_ct = crypto.encrypt(identity.private_key, m_pub, key_payload)
+        key_msg = build_message(
+            type=MSG_GROUP_KEY_UPDATE,
+            from_key=identity.public_key,
+            to_key=m_pub,
+            payload=key_ct,
+            private_key=identity.private_key,
+            ttl=2_592_000,  # 30 days — key updates are critical
+        )
+        broadcasts.append((key_msg, member["onion_address"]))
+
+        # 2. Roster change: notify that removed member is gone
+        upd_payload = json.dumps({
+            "op": "remove",
+            "group_id": group_id,
+            "public_key": member_hex,
+        }).encode()
+        upd_ct = crypto.encrypt(identity.private_key, m_pub, upd_payload)
+        upd_msg = build_message(
+            type=MSG_GROUP_MEMBER_UPDATE,
+            from_key=identity.public_key,
+            to_key=m_pub,
+            payload=upd_ct,
+            private_key=identity.private_key,
+            ttl=ttl,
+        )
+        broadcasts.append((upd_msg, member["onion_address"]))
+
+    return new_key, broadcasts
+
+
+async def handle_member_update(
+    db: Database,
+    identity: Identity,
+    msg: dict,
+) -> None:
+    """Process an incoming group_member_update from the group admin.
+
+    Verifies that the sender is the admin of the referenced group,
+    then adds or removes the member from the local group_members table.
+    """
+    if msg["to"] != identity.public_key.hex():
+        return
+
+    ciphertext = base64.b64decode(msg["payload"])
+    sender_pub = bytes.fromhex(msg["from"])
+    plaintext = crypto.decrypt(identity.private_key, sender_pub, ciphertext)
+    update = json.loads(plaintext)
+
+    group_id = update.get("group_id", "")
+    group = await db.get_group(group_id)
+    if group is None:
+        return  # unknown group — ignore
+
+    # Only accept roster updates from the group admin
+    if msg["from"] != group["admin_key"]:
+        return
+
+    op = update.get("op")
+    pub = update.get("public_key", "")
+    onion = update.get("onion", "")
+
+    if op == "add" and pub:
+        await db.save_group_member(
+            group_id, pub, int(time.time()), onion_address=onion
+        )
+    elif op == "remove" and pub:
+        await db.delete_group_member(group_id, pub)
+
+
+async def handle_key_update(
+    db: Database,
+    identity: Identity,
+    msg: dict,
+) -> None:
+    """Process an incoming group_key_update from the group admin.
+
+    Verifies that the sender is the admin of the referenced group,
+    then replaces the local group key with the new one.
+    """
+    if msg["to"] != identity.public_key.hex():
+        return
+
+    ciphertext = base64.b64decode(msg["payload"])
+    sender_pub = bytes.fromhex(msg["from"])
+    plaintext = crypto.decrypt(identity.private_key, sender_pub, ciphertext)
+    update = json.loads(plaintext)
+
+    group_id = update.get("group_id", "")
+    group = await db.get_group(group_id)
+    if group is None:
+        return
+
+    # Only accept key updates from the group admin
+    if msg["from"] != group["admin_key"]:
+        return
+
+    new_key = base64.b64decode(update["new_key"])
+    if len(new_key) != 32:
+        return  # invalid key length — reject silently
+
+    await db.update_group_key(group_id, new_key)
 
 
 # ------------------------------------------------------------------
@@ -272,47 +463,10 @@ async def get_posts(db: Database, group_id: str) -> list[dict]:
 
 
 # ------------------------------------------------------------------
-# internal helpers
+# helpers
 # ------------------------------------------------------------------
 
 def _group_id(admin_key: bytes, name: str, timestamp: int) -> str:
     """Deterministic 64-hex group id."""
     data = admin_key + name.encode() + timestamp.to_bytes(8, "big")
     return hashlib.sha256(data).hexdigest()
-
-
-def _group_id_bytes(group_id: str) -> bytes:
-    """Return 32-byte representation of a group_id for use as 'to' key in protocol."""
-    return bytes.fromhex(group_id)
-
-
-def _pack_invite(group_id: str, group_name: str, encrypted_key: bytes) -> bytes:
-    """Pack invite fields into a binary payload.
-
-    Format: [1B group_id_len][group_id][2B name_len][name][encrypted_key]
-    group_id is always 64 hex chars = 64 bytes ASCII.
-    """
-    gid_b = group_id.encode()
-    name_b = group_name.encode()
-    return (
-        len(gid_b).to_bytes(1, "big")
-        + gid_b
-        + len(name_b).to_bytes(2, "big")
-        + name_b
-        + encrypted_key
-    )
-
-
-def _unpack_invite(data: bytes) -> tuple[str, str, bytes]:
-    """Unpack binary invite payload. Returns (group_id, group_name, encrypted_key)."""
-    offset = 0
-    gid_len = data[offset]
-    offset += 1
-    group_id = data[offset : offset + gid_len].decode()
-    offset += gid_len
-    name_len = int.from_bytes(data[offset : offset + 2], "big")
-    offset += 2
-    group_name = data[offset : offset + name_len].decode()
-    offset += name_len
-    encrypted_key = data[offset:]
-    return group_id, group_name, encrypted_key

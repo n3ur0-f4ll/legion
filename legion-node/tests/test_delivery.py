@@ -25,7 +25,7 @@ import pytest
 
 from core.identity import generate as gen
 from core.storage import Database
-from messaging.delivery import RETRY_SCHEDULE, DeliveryQueue, _entry_id, _load_message_json
+from messaging.delivery import DeliveryQueue, _LOOP_INTERVAL, _entry_id, _load_message_json
 from messaging.private import send
 
 ALICE = gen("alice")
@@ -182,12 +182,14 @@ async def test_process_due_schedules_retry_on_failure(db):
     due_now = await db.get_due(now + 1)
     assert due_now == []  # next_retry_at is in the future
 
-    due_after = await db.get_due(now + RETRY_SCHEDULE[0] + 2)
+    # After _LOOP_INTERVAL seconds the message is due again
+    due_after = await db.get_due(now + _LOOP_INTERVAL + 2)
     assert len(due_after) == 1
     assert due_after[0]["retry_count"] == 1
 
 
-async def test_process_due_follows_full_retry_schedule(db):
+async def test_process_due_retries_indefinitely(db):
+    """Flat retry every _LOOP_INTERVAL — no cap on number of attempts."""
     msg = await _send_msg(db)
 
     async def failing_sender(m, onion):
@@ -196,19 +198,16 @@ async def test_process_due_follows_full_retry_schedule(db):
     q = DeliveryQueue(db, sender=failing_sender)
     await q.enqueue(msg, "bob.onion")
 
+    # Simulate many retry cycles
     current_time = NOW
-    for i, interval in enumerate(RETRY_SCHEDULE):
-        current_time += interval + 1
+    for i in range(10):
+        current_time += _LOOP_INTERVAL + 1
         await q.process_due(current_time)
-        due = await db.get_due(current_time)
-        if i < len(RETRY_SCHEDULE) - 1:
-            assert due == [], f"should not be due immediately after retry {i}"
 
-    # After last retry, message stays in queue without further retries
-    late = current_time + 999_999
-    due = await db.get_due(late)
-    assert len(due) == 1  # still in queue
-    assert due[0]["retry_count"] == len(RETRY_SCHEDULE)
+    # After 10 failures the message must still be in the queue
+    due = await db.get_due(current_time + _LOOP_INTERVAL + 1)
+    assert len(due) == 1, "message must remain queued for indefinite retries"
+    assert due[0]["retry_count"] == 10
 
 
 async def test_process_due_removes_orphaned_entry(db):

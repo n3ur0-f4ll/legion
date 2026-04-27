@@ -18,6 +18,18 @@ let networkLog = [];          // ring buffer of log entries
 let netFilter = "all";        // "all" | "tor" | "msg"
 let netLogAutoScroll = true;  // auto-scroll unless user scrolled up
 
+// TTL state
+const TTL_OPTIONS = [
+    { label: "1 hour",  short: "1h",  seconds: 3600 },
+    { label: "6 hours", short: "6h",  seconds: 21600 },
+    { label: "1 day",   short: "1d",  seconds: 86400 },
+    { label: "3 days",  short: "3d",  seconds: 259200 },
+    { label: "7 days",  short: "7d",  seconds: 604800 },
+    { label: "30 days", short: "30d", seconds: 2592000 },
+];
+let defaultTtl = 604800;   // loaded from identity.default_ttl
+let msgTtl = null;         // null = use defaultTtl; number = per-message override
+
 // ================================================================
 // Initialisation
 // ================================================================
@@ -141,6 +153,9 @@ function switchTab(tab) {
 async function showMain() {
     showView("main");
     document.getElementById("status-alias").textContent = identity.alias;
+    defaultTtl = identity.default_ttl || 604800;
+    _buildTtlDropdown();
+    _updateTtlBtn();
     showPanel("welcome");
     await loadSidebar();
     connectSSE();
@@ -196,11 +211,14 @@ async function loadGroups() {
             const div = document.createElement("div");
             div.className = "group-item";
             div.dataset.id = g.id;
+            const badge = (g.unread_count > 0)
+                ? `<span class="unread-badge">${g.unread_count}</span>` : "";
             div.innerHTML = `
                 <div class="item-info">
                     <span class="item-name">${esc(g.name)}</span>
                     <span class="item-sub">${g.is_admin ? "admin" : "member"}</span>
                 </div>
+                ${badge}
                 <button class="btn-delete-item" title="Leave / delete group">×</button>
             `;
             div.querySelector(".item-info").addEventListener("click", () => openGroup(g));
@@ -305,6 +323,16 @@ async function handleEvent(event) {
     } else if (event.type === "group_invite") {
         loadGroups();
         showToast("You were invited to a group");
+    } else if (event.type === "group_member_update") {
+        // Refresh member list if it's open for the current group
+        const panel = document.getElementById("member-list-panel");
+        if (currentGroup && !panel.classList.contains("hidden")) {
+            loadMemberList();
+        }
+        loadGroups();
+    } else if (event.type === "group_key_update") {
+        showToast("Group key rotated — a member was removed");
+        loadGroups();
     } else if (event.type === "network_log") {
         if (event.level === "bw") {
             const parts = event.text.split(":");
@@ -410,7 +438,12 @@ async function loadMessages(contact) {
             bubble.className = `message-bubble ${isOutgoing ? "outgoing" : "incoming"}`;
             const ts = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
             const statusIcon = { queued: '…', sent: '→', delivered: '✓', failed: '✗' };
-            const icon = isOutgoing ? `<span class="status-icon ${msg.status}" title="${msg.status}">${statusIcon[msg.status] || ''}</span>` : '';
+            const cancelBtn = (isOutgoing && msg.status === 'queued')
+                ? `<button class="btn-cancel-msg" title="Cancel delivery" data-id="${msg.id}">×</button>`
+                : '';
+            const icon = isOutgoing
+                ? `<span class="status-icon ${msg.status}" title="${msg.status}">${statusIcon[msg.status] || ''}</span>${cancelBtn}`
+                : '';
 
             let content;
             if (msg.file_data && msg.mime_type) {
@@ -431,10 +464,24 @@ async function loadMessages(contact) {
                 <div class="message-text">${content}</div>
                 <div class="message-meta"><span>${ts}</span>${icon}</div>
             `;
+            if (isOutgoing && msg.status === 'queued') {
+                const btn = bubble.querySelector(".btn-cancel-msg");
+                if (btn) btn.addEventListener("click", () => cancelMessage(msg.id));
+            }
             list.appendChild(bubble);
         });
         _scrollToBottom(list);
     } catch (_) {}
+}
+
+async function cancelMessage(messageId) {
+    if (!confirm("Cancel delivery of this message?\nIt will be marked as failed.")) return;
+    try {
+        await api("DELETE", `/api/messages/${messageId}`);
+        if (currentContact) await loadMessages(currentContact);
+    } catch (err) {
+        showToast("Error: " + err.message);
+    }
 }
 
 function _scrollToBottom(list) {
@@ -463,6 +510,7 @@ async function sendMessage() {
 
     try {
         const body = { to: currentContact.public_key, onion: currentContact.onion_address };
+        if (msgTtl !== null) body.ttl = msgTtl;
         if (pendingFile) {
             body.file_data = pendingFile.data;
             body.file_name = pendingFile.name;
@@ -473,6 +521,9 @@ async function sendMessage() {
             body.text = text;
         }
         await api("POST", "/api/messages", body);
+        // Reset per-message TTL after successful send
+        msgTtl = null;
+        _updateTtlBtn();
         await loadMessages(currentContact);
     } catch (err) {
         showToast("Failed to send: " + err.message);
@@ -559,9 +610,19 @@ async function openGroup(group) {
 
     document.getElementById("group-name").textContent = group.name;
     const adminActions = document.getElementById("group-admin-actions");
-    adminActions.classList.toggle("hidden", !group.is_admin);
+    if (group.is_admin) {
+        adminActions.classList.remove("hidden");
+        adminActions.style.display = "flex";
+    } else {
+        adminActions.classList.add("hidden");
+    }
+    // Hide member list when switching groups
+    document.getElementById("member-list-panel").classList.add("hidden");
 
     showPanel("group");
+    // Mark group as read and refresh sidebar badge
+    try { await api("POST", `/api/groups/${group.id}/read`); } catch (_) {}
+    await loadGroups();
     await loadPosts(group);
 }
 
@@ -627,6 +688,8 @@ async function showSettings() {
     document.getElementById("alias-status").textContent = "";
     document.getElementById("settings-pubkey").textContent = identity.public_key;
     document.getElementById("settings-onion").textContent = identity.onion_address;
+    document.getElementById("settings-default-ttl").value = String(identity.default_ttl || 604800);
+    document.getElementById("ttl-status").textContent = "";
 
     // Load relay config
     try {
@@ -686,6 +749,22 @@ async function panicDelete() {
         showView("onboarding");
     } catch (err) {
         showToast("Error: " + err.message);
+    }
+}
+
+async function saveDefaultTtl() {
+    const sel = document.getElementById("settings-default-ttl");
+    const ttl = parseInt(sel.value, 10);
+    const statusEl = document.getElementById("ttl-status");
+    try {
+        await api("PATCH", "/api/identity/default_ttl", { ttl });
+        identity.default_ttl = ttl;
+        defaultTtl = ttl;
+        if (msgTtl === null) _updateTtlBtn();   // refresh button if no override active
+        statusEl.textContent = "Saved.";
+        setTimeout(() => { statusEl.textContent = ""; }, 2000);
+    } catch (err) {
+        statusEl.textContent = "Error: " + err.message;
     }
 }
 
@@ -843,34 +922,103 @@ async function createGroup() {
 // Invite member modal
 // ================================================================
 
-function showInviteMember() {
-    document.getElementById("invite-pubkey").value = "";
-    document.getElementById("invite-error").classList.add("hidden");
+async function toggleMemberList() {
+    if (!currentGroup) return;
+    const panel = document.getElementById("member-list-panel");
+    if (!panel.classList.contains("hidden")) {
+        panel.classList.add("hidden");
+        return;
+    }
+    await loadMemberList();
+    panel.classList.remove("hidden");
+}
+
+async function loadMemberList() {
+    if (!currentGroup) return;
+    try {
+        const members = await api("GET", `/api/groups/${currentGroup.id}/members`);
+        const list = document.getElementById("member-list");
+        list.innerHTML = "";
+        members.forEach(m => {
+            const div = document.createElement("div");
+            div.className = "member-item";
+            const adminBadge = m.is_admin ? `<span class="member-admin-badge">admin</span>` : "";
+            const removeBtn = (currentGroup.is_admin && !m.is_admin)
+                ? `<button class="btn-remove-member" title="Remove member" data-key="${m.public_key}">×</button>`
+                : "";
+            div.innerHTML = `
+                ${adminBadge}
+                <span class="member-key">${m.public_key.slice(0, 24)}…</span>
+                ${removeBtn}
+            `;
+            const btn = div.querySelector(".btn-remove-member");
+            if (btn) btn.addEventListener("click", () => removeMember(m.public_key));
+            list.appendChild(div);
+        });
+        document.getElementById("btn-members").textContent = `Members ${members.length}`;
+    } catch (_) {}
+}
+
+async function removeMember(publicKey) {
+    if (!currentGroup) return;
+    if (!confirm("Remove this member and rotate the group key?\nAll remaining members will receive the new key automatically.")) return;
+    try {
+        await api("DELETE", `/api/groups/${currentGroup.id}/members/${publicKey}`);
+        showToast("Member removed, key rotated");
+        await loadMemberList();
+    } catch (err) {
+        showToast("Error: " + err.message);
+    }
+}
+
+async function showInviteMember() {
+    if (!currentGroup) return;
+    const sel = document.getElementById("invite-contact-select");
+    const errEl = document.getElementById("invite-error");
+    errEl.classList.add("hidden");
+    sel.innerHTML = '<option value="">— select contact —</option>';
+
+    try {
+        const [contacts, members] = await Promise.all([
+            api("GET", "/api/contacts"),
+            api("GET", `/api/groups/${currentGroup.id}/members`),
+        ]);
+        const memberKeys = new Set(members.map(m => m.public_key));
+        contacts
+            .filter(c => !memberKeys.has(c.public_key))
+            .forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.public_key;
+                opt.dataset.onion = c.onion_address;
+                opt.textContent = c.alias || c.public_key.slice(0, 24) + "…";
+                sel.appendChild(opt);
+            });
+    } catch (_) {}
+
     openModal("modal-invite");
 }
 
 async function inviteMember() {
     if (!currentGroup) return;
-    const pubkey = document.getElementById("invite-pubkey").value.trim();
+    const sel = document.getElementById("invite-contact-select");
     const errEl = document.getElementById("invite-error");
     errEl.classList.add("hidden");
 
-    if (!pubkey) return;
+    const pubkey = sel.value;
+    if (!pubkey) {
+        showError(errEl, "Select a contact to invite.");
+        return;
+    }
+    const onion = sel.selectedOptions[0]?.dataset.onion || "";
 
-    // Look up contact to get onion address
     try {
-        const contacts = await api("GET", "/api/contacts");
-        const contact = contacts.find(c => c.public_key === pubkey);
-        if (!contact) {
-            showError(errEl, "Contact not found. Add them first.");
-            return;
-        }
         await api("POST", `/api/groups/${currentGroup.id}/invite`, {
             public_key: pubkey,
-            onion: contact.onion_address,
+            onion,
         });
         closeModal("modal-invite");
         showToast("Invitation sent");
+        await loadMemberList();
     } catch (err) {
         showError(errEl, err.message);
     }
@@ -923,6 +1071,58 @@ function copyToClipboard(text, successMsg = "Copied") {
         navigator.clipboard.writeText(text).then(() => showToast(successMsg)).catch(() => {});
     }
 }
+
+// ================================================================
+// TTL picker
+// ================================================================
+
+function _ttlShort(seconds) {
+    return (TTL_OPTIONS.find(o => o.seconds === seconds) || {}).short || "?";
+}
+
+function _updateTtlBtn() {
+    const effective = msgTtl ?? defaultTtl;
+    document.getElementById("ttl-label").textContent = _ttlShort(effective);
+    document.getElementById("btn-ttl").classList.toggle("custom", msgTtl !== null);
+    document.querySelectorAll(".ttl-opt[data-ttl]").forEach(b => {
+        b.classList.toggle("active", parseInt(b.dataset.ttl, 10) === effective);
+    });
+}
+
+function _buildTtlDropdown() {
+    const dd = document.getElementById("ttl-dropdown");
+    if (dd.children.length) return;  // already built
+    TTL_OPTIONS.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "ttl-opt";
+        btn.dataset.ttl = String(opt.seconds);
+        btn.textContent = opt.label;
+        btn.addEventListener("click", () => setMsgTtl(opt.seconds));
+        dd.appendChild(btn);
+    });
+    const reset = document.createElement("button");
+    reset.className = "ttl-opt ttl-reset";
+    reset.textContent = "Use default";
+    reset.addEventListener("click", () => setMsgTtl(null));
+    dd.appendChild(reset);
+}
+
+function toggleTtlPicker() {
+    document.getElementById("ttl-dropdown").classList.toggle("hidden");
+}
+
+function setMsgTtl(seconds) {
+    msgTtl = (seconds !== null && seconds === defaultTtl) ? null : seconds;
+    _updateTtlBtn();
+    document.getElementById("ttl-dropdown").classList.add("hidden");
+}
+
+// Close TTL dropdown when clicking outside
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".ttl-picker")) {
+        document.getElementById("ttl-dropdown")?.classList.add("hidden");
+    }
+});
 
 // ================================================================
 // Network log
