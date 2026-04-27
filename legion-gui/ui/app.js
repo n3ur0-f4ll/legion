@@ -324,14 +324,30 @@ async function handleEvent(event) {
         loadGroups();
         showToast("You were invited to a group");
     } else if (event.type === "group_member_update") {
-        // Refresh member list if it's open for the current group
-        const panel = document.getElementById("member-list-panel");
-        if (currentGroup && !panel.classList.contains("hidden")) {
-            loadMemberList();
+        // Fix 1 & 2 & 4
+        if (event.op === "removed_self") {
+            // We were removed from the group
+            showToast(`You were removed from "${esc(event.group_name || "a group")}"`);
+            if (currentGroup && currentGroup.id === event.group_id) {
+                currentGroup = null;
+                showPanel("welcome");
+            }
+        } else if (currentGroup && event.group_id === currentGroup.id) {
+            // Fix 4: only refresh when it's the current group
+            const memberPanel = document.getElementById("member-list-panel");
+            if (!memberPanel.classList.contains("hidden")) {
+                await loadMemberList();
+            }
+            // Fix 2: system message in the post list
+            const label = event.op === "add" ? "joined the group" : "left the group";
+            const key = event.public_key || "";
+            appendSystemPost(`${key.slice(0, 10)}… ${label}`);
         }
         loadGroups();
     } else if (event.type === "group_key_update") {
-        showToast("Group key rotated — a member was removed");
+        if (currentGroup && event.group_id === currentGroup.id) {
+            appendSystemPost("Group key was rotated");
+        }
         loadGroups();
     } else if (event.type === "network_log") {
         if (event.level === "bw") {
@@ -636,7 +652,10 @@ async function loadPosts(group) {
             const bubble = document.createElement("div");
             bubble.className = `message-bubble ${isOurs ? "outgoing" : "incoming"}`;
             const ts = new Date(post.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
-            const author = isOurs ? "You" : post.author_key.slice(0, 10) + "…";
+            // Fix 3: show alias instead of raw key
+            const author = isOurs
+                ? "You"
+                : esc(post.author_alias || (post.author_key.slice(0, 10) + "…"));
             const text = post.text != null ? esc(post.text) : '<em style="opacity:.5">[encrypted]</em>';
             bubble.innerHTML = `
                 <div class="message-text">${text}</div>
@@ -965,10 +984,22 @@ async function removeMember(publicKey) {
     try {
         await api("DELETE", `/api/groups/${currentGroup.id}/members/${publicKey}`);
         showToast("Member removed, key rotated");
+        // Fix 2: show system message for the admin immediately
+        appendSystemPost(`${publicKey.slice(0, 10)}… was removed — key rotated`);
         await loadMemberList();
     } catch (err) {
         showToast("Error: " + err.message);
     }
+}
+
+function appendSystemPost(text) {
+    const list = document.getElementById("posts-list");
+    if (!list) return;
+    const div = document.createElement("div");
+    div.className = "system-post";
+    div.textContent = text;
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
 }
 
 async function showInviteMember() {

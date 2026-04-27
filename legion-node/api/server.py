@@ -552,7 +552,13 @@ def create_app(state: AppState) -> FastAPI:
         group = await s.db.get_group(group_id)
         group_key = group["group_key"] if group else None
         posts = await groups.get_posts(s.db, group_id)
-        return [_decrypt_post(row, group_key) for row in posts]
+        result = []
+        for row in posts:
+            decrypted = _decrypt_post(row, group_key)
+            contact = await s.db.get_contact(row["author_key"])
+            decrypted["author_alias"] = contact["alias"] if contact else None
+            result.append(decrypted)
+        return result
 
     @app.post("/api/groups/{group_id}/posts", status_code=201)
     async def create_post(
@@ -692,17 +698,23 @@ def make_message_handler(state: AppState):
 
         elif msg_type == "group_member_update":
             try:
-                await groups.handle_member_update(state.db, state.identity, msg)
-                state.push_event("group_member_update", {"from": sender})
-                state.push_network_log("info", "msg", f"← Group roster updated by {sender[:8]}…")
+                info = await groups.handle_member_update(state.db, state.identity, msg)
+                if info:
+                    state.push_event("group_member_update", {"from": sender, **info})
+                    state.push_network_log("info", "msg",
+                        f"← Group roster updated by {sender[:8]}… (op={info['op']})")
             except Exception:
                 pass
 
         elif msg_type == "group_key_update":
             try:
-                await groups.handle_key_update(state.db, state.identity, msg)
-                state.push_event("group_key_update", {"from": sender})
-                state.push_network_log("info", "msg", f"← Group key rotated by {sender[:8]}…")
+                group_id = await groups.handle_key_update(state.db, state.identity, msg)
+                if group_id:
+                    state.push_event("group_key_update", {
+                        "from": sender, "group_id": group_id,
+                    })
+                    state.push_network_log("info", "msg",
+                        f"← Group key rotated by {sender[:8]}…")
             except Exception:
                 pass
 

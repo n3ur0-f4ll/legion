@@ -225,16 +225,17 @@ async def test_remove_member_removes_from_db(db):
 
 
 async def test_remove_member_broadcasts_to_remaining(db):
-    """Remaining members (not Bob) should receive key_update + member_update."""
+    """Remaining members (Eve) receive key_update + member_update.
+    Removed member (Bob) receives a notification to let him know he was removed."""
     group = await create_group(db, ALICE, "Crew")
     await invite_member(db, ALICE, group["id"], BOB.public_key, BOB_ONION)
     await invite_member(db, ALICE, group["id"], EVE.public_key, EVE_ONION)
     _, broadcasts = await remove_member(db, ALICE, group["id"], BOB.public_key)
-    # Eve should receive both a key_update and a member_update
     destinations = [onion for _, onion in broadcasts]
+    # Eve (remaining member) must receive key_update + member_update
     assert EVE_ONION in destinations
-    # Should NOT send anything to Bob (he was removed)
-    assert BOB_ONION not in destinations
+    # Bob (removed) must receive exactly one notification (the removal notice)
+    assert destinations.count(BOB_ONION) == 1
 
 
 async def test_remove_member_non_admin_raises(db):

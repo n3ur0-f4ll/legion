@@ -513,6 +513,23 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .status-icon.delivered{ color: var(--accent); }
 .status-icon.failed   { color: var(--error); }
 
+/* Group system messages */
+.system-post {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 16px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+.system-post::before,
+.system-post::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
 /* Group member list */
 .member-list-panel {
     background: var(--bg-secondary);

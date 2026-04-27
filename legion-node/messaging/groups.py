@@ -241,7 +241,8 @@ async def remove_member(
     """Remove a member, rotate the group key, and build broadcast messages.
 
     Returns (new_group_key, [(msg, destination_onion), ...]) where msgs are
-    group_key_update and group_member_update messages to queue for all remaining members.
+    group_key_update and group_member_update messages for all remaining members
+    PLUS a group_member_update for the removed member so they know they were removed.
 
     Raises PermissionError if caller is not admin.
     Raises LookupError if group does not exist.
@@ -253,16 +254,41 @@ async def remove_member(
         raise PermissionError("Only the group admin can remove members")
 
     member_hex = member_public_key.hex()
+
+    # Save removed member's onion BEFORE deleting — needed to notify them
+    all_members = await db.get_group_members(group_id)
+    removed_record = next((m for m in all_members if m["public_key"] == member_hex), None)
+    removed_onion = removed_record["onion_address"] if removed_record else ""
+
     await db.delete_group_member(group_id, member_hex)
 
     # Generate and save new key immediately
     new_key = crypto.generate_group_key()
     await db.update_group_key(group_id, new_key)
 
-    # Build broadcasts to all remaining members
-    remaining = await db.get_group_members(group_id)
     broadcasts: list[tuple[dict, str]] = []
 
+    # Notify the removed member so they can delete the group locally and show UI feedback
+    if removed_onion:
+        rm_payload = json.dumps({
+            "op": "remove",
+            "group_id": group_id,
+            "public_key": member_hex,
+            "group_name": group["name"],
+        }).encode()
+        rm_ct = crypto.encrypt(identity.private_key, member_public_key, rm_payload)
+        rm_msg = build_message(
+            type=MSG_GROUP_MEMBER_UPDATE,
+            from_key=identity.public_key,
+            to_key=member_public_key,
+            payload=rm_ct,
+            private_key=identity.private_key,
+            ttl=ttl,
+        )
+        broadcasts.append((rm_msg, removed_onion))
+
+    # Build broadcasts to all remaining members
+    remaining = await db.get_group_members(group_id)
     for member in remaining:
         if member["public_key"] == identity.public_key.hex():
             continue
@@ -291,6 +317,7 @@ async def remove_member(
             "op": "remove",
             "group_id": group_id,
             "public_key": member_hex,
+            "group_name": group["name"],
         }).encode()
         upd_ct = crypto.encrypt(identity.private_key, m_pub, upd_payload)
         upd_msg = build_message(
@@ -310,14 +337,19 @@ async def handle_member_update(
     db: Database,
     identity: Identity,
     msg: dict,
-) -> None:
+) -> dict | None:
     """Process an incoming group_member_update from the group admin.
 
     Verifies that the sender is the admin of the referenced group,
     then adds or removes the member from the local group_members table.
+
+    Special case: if op=remove and public_key == our own key, the admin removed US.
+    We delete the group from local DB and return op="removed_self".
+
+    Returns a dict with context for the SSE event, or None if the message was ignored.
     """
     if msg["to"] != identity.public_key.hex():
-        return
+        return None
 
     ciphertext = base64.b64decode(msg["payload"])
     sender_pub = bytes.fromhex(msg["from"])
@@ -327,36 +359,52 @@ async def handle_member_update(
     group_id = update.get("group_id", "")
     group = await db.get_group(group_id)
     if group is None:
-        return  # unknown group — ignore
+        return None  # unknown group — ignore
 
     # Only accept roster updates from the group admin
     if msg["from"] != group["admin_key"]:
-        return
+        return None
 
     op = update.get("op")
     pub = update.get("public_key", "")
     onion = update.get("onion", "")
+    group_name = update.get("group_name", group["name"])
 
     if op == "add" and pub:
         await db.save_group_member(
             group_id, pub, int(time.time()), onion_address=onion
         )
+        return {"op": "add", "group_id": group_id, "public_key": pub,
+                "group_name": group_name}
+
     elif op == "remove" and pub:
-        await db.delete_group_member(group_id, pub)
+        if pub == identity.public_key.hex():
+            # We were removed — delete the group from our local DB
+            await db.delete_group(group_id)
+            return {"op": "removed_self", "group_id": group_id, "public_key": pub,
+                    "group_name": group_name}
+        else:
+            await db.delete_group_member(group_id, pub)
+            return {"op": "remove", "group_id": group_id, "public_key": pub,
+                    "group_name": group_name}
+
+    return None
 
 
 async def handle_key_update(
     db: Database,
     identity: Identity,
     msg: dict,
-) -> None:
+) -> str | None:
     """Process an incoming group_key_update from the group admin.
 
     Verifies that the sender is the admin of the referenced group,
     then replaces the local group key with the new one.
+
+    Returns the group_id on success, None if the message was ignored.
     """
     if msg["to"] != identity.public_key.hex():
-        return
+        return None
 
     ciphertext = base64.b64decode(msg["payload"])
     sender_pub = bytes.fromhex(msg["from"])
@@ -366,17 +414,18 @@ async def handle_key_update(
     group_id = update.get("group_id", "")
     group = await db.get_group(group_id)
     if group is None:
-        return
+        return None
 
     # Only accept key updates from the group admin
     if msg["from"] != group["admin_key"]:
-        return
+        return None
 
     new_key = base64.b64decode(update["new_key"])
     if len(new_key) != 32:
-        return  # invalid key length — reject silently
+        return None  # invalid key length — reject silently
 
     await db.update_group_key(group_id, new_key)
+    return group_id
 
 
 # ------------------------------------------------------------------
