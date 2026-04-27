@@ -1,0 +1,1842 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Technical reference for the Legion decentralized messaging platform">
+      
+      
+        <meta name="author" content="n3ur0-f4ll">
+      
+      
+      
+        <link rel="prev" href="../core/">
+      
+      
+        <link rel="next" href="../messaging/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Network layer - Legion — Technical Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#network-layer" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Legion — Technical Documentation" class="md-header__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Legion — Technical Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Network layer
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
+          
+  
+  
+  legion-node
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../gui/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-gui
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../relay/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-relay
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Legion — Technical Documentation" class="md-nav__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Legion — Technical Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-node
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-node
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network layer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#torpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tor.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="tor.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tormanager-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TorManager (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TorManager (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#startprivate_key-bytes-hs_port-int-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start(private_key: bytes, hs_port: int) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stop() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attach_log_listenercallback-logcallback-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        attach_log_listener(callback: LogCallback) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internal-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Internal helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_launch-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _launch() → process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_create_hidden_serviceprivate_key-bytes-hs_port-int-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _create_hidden_service(private_key: bytes, hs_port: int) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_ed25519_seed_to_expandedseed-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _ed25519_seed_to_expanded(seed: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#torerror-exception" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TorError (exception)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        node.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="node.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nodeserver-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NodeServer (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="NodeServer (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starthandler-messagehandler-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start(handler: MessageHandler) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-none_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stop() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_handlewebsocket-handler-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _handle(websocket, handler) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messagehandler-type-alias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MessageHandler type alias
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        client.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="client.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#send_messagemsg-onion_address-socks_host-socks_port-hs_port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_message(msg, onion_address, *, socks_host, socks_port, hs_port) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#socks5-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SOCKS5 implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SOCKS5 implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_socks5_connecthost-port-proxy_host-proxy_port-socket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _socks5_connect(host, port, proxy_host, proxy_port) → socket
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_socks5_handshakesock-host-port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _socks5_handshake(sock, host, port) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_recv_exactsock-n-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _recv_exact(sock, n) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relaypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="relay.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#is_relay_configureddb-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_relay_configured(db) → bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_relay_oniondb-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_relay_onion(db) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#send_via_relaydb-msg-socks_host-socks_port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_via_relay(db, msg, *, socks_host, socks_port) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choose_destinationdb-recipient_onion-tuplestr-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        choose_destination(db, recipient_onion) → tuple[str, bool]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-gui
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-gui
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gui/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-relay
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-relay
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../relay/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#torpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        tor.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="tor.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tormanager-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TorManager (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TorManager (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#startprivate_key-bytes-hs_port-int-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start(private_key: bytes, hs_port: int) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stop() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attach_log_listenercallback-logcallback-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        attach_log_listener(callback: LogCallback) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Properties
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internal-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Internal helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_launch-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _launch() → process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_create_hidden_serviceprivate_key-bytes-hs_port-int-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _create_hidden_service(private_key: bytes, hs_port: int) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_ed25519_seed_to_expandedseed-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _ed25519_seed_to_expanded(seed: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#torerror-exception" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TorError (exception)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nodepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        node.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="node.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nodeserver-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NodeServer (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="NodeServer (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starthandler-messagehandler-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start(handler: MessageHandler) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-none_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stop() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_handlewebsocket-handler-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _handle(websocket, handler) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messagehandler-type-alias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MessageHandler type alias
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clientpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        client.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="client.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#send_messagemsg-onion_address-socks_host-socks_port-hs_port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_message(msg, onion_address, *, socks_host, socks_port, hs_port) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#socks5-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SOCKS5 implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SOCKS5 implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_socks5_connecthost-port-proxy_host-proxy_port-socket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _socks5_connect(host, port, proxy_host, proxy_port) → socket
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_socks5_handshakesock-host-port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _socks5_handshake(sock, host, port) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_recv_exactsock-n-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _recv_exact(sock, n) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relaypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        relay.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="relay.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#is_relay_configureddb-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_relay_configured(db) → bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_relay_oniondb-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_relay_onion(db) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#send_via_relaydb-msg-socks_host-socks_port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        send_via_relay(db, msg, *, socks_host, socks_port) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#choose_destinationdb-recipient_onion-tuplestr-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        choose_destination(db, recipient_onion) → tuple[str, bool]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="network-layer">Network layer<a class="headerlink" href="#network-layer" title="Permanent link">&para;</a></h1>
+<p>The network layer handles all communication between nodes: managing the Tor process,
+accepting incoming messages, sending outgoing messages through Tor SOCKS5, and selecting
+whether to send directly or via a relay.</p>
+<hr />
+<h2 id="torpy">tor.py<a class="headerlink" href="#torpy" title="Permanent link">&para;</a></h2>
+<p>Manages the Tor subprocess lifecycle and the v3 Hidden Service registration.
+All blocking Stem calls are run in an executor to avoid blocking the asyncio event loop.</p>
+<h3 id="tormanager-class"><code>TorManager</code> (class)<a class="headerlink" href="#tormanager-class" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">TorManager</span><span class="p">(</span><span class="n">data_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">socks_port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">9050</span><span class="p">,</span> <span class="n">control_port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">9051</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="startprivate_key-bytes-hs_port-int-str"><code>start(private_key: bytes, hs_port: int) → str</code><a class="headerlink" href="#startprivate_key-bytes-hs_port-int-str" title="Permanent link">&para;</a></h4>
+<p>Full startup sequence:</p>
+<ol>
+<li>Creates data directory if needed</li>
+<li>Runs <code>_launch()</code> in executor with <code>asyncio.wait_for(timeout=120s)</code></li>
+<li>Connects to Tor control port via Stem</li>
+<li>Authenticates to the controller</li>
+<li>Calls <code>_create_hidden_service()</code> in executor</li>
+<li>Returns the <code>.onion</code> address</li>
+</ol>
+<p>If any step fails, calls <code>stop()</code> to clean up before raising <code>TorError</code>.</p>
+<h4 id="stop-none"><code>stop() → None</code><a class="headerlink" href="#stop-none" title="Permanent link">&para;</a></h4>
+<p>Closes the Stem controller connection, then terminates the Tor subprocess.
+If <code>terminate()</code> doesn't work within 5 seconds, escalates to <code>kill()</code>.</p>
+<h4 id="attach_log_listenercallback-logcallback-none"><code>attach_log_listener(callback: LogCallback) → None</code><a class="headerlink" href="#attach_log_listenercallback-logcallback-none" title="Permanent link">&para;</a></h4>
+<p>Registers Stem event listeners after <code>start()</code> succeeds.
+<code>callback(level, category, text)</code> is called from <strong>Stem's event thread</strong>.
+The caller must wrap it with <code>loop.call_soon_threadsafe()</code> to safely push
+events into the asyncio event loop (done in <code>api/server.py:_start_tor_background</code>).</p>
+<p>Registered event types:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Handler</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CIRC</code></td>
+<td><code>_on_circ</code></td>
+<td>HS circuit establishment/failure</td>
+</tr>
+<tr>
+<td><code>BW</code></td>
+<td><code>_on_bw</code></td>
+<td>Bandwidth stats (bytes/s read:written)</td>
+</tr>
+<tr>
+<td><code>STATUS_CLIENT</code></td>
+<td><code>_on_status</code></td>
+<td>Bootstrap state changes</td>
+</tr>
+<tr>
+<td><code>WARN</code>, <code>ERR</code></td>
+<td><code>_on_warn</code></td>
+<td>Tor warning and error messages</td>
+</tr>
+</tbody>
+</table>
+<h4 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>onion_address</code></td>
+<td><code>str</code></td>
+<td><code>.onion</code> address — raises <code>TorError</code> if not running</td>
+</tr>
+<tr>
+<td><code>socks_port</code></td>
+<td><code>int</code></td>
+<td>SOCKS5 port for outgoing connections</td>
+</tr>
+<tr>
+<td><code>is_running</code></td>
+<td><code>bool</code></td>
+<td>True if both process and controller are active</td>
+</tr>
+</tbody>
+</table>
+<h3 id="internal-helpers">Internal helpers<a class="headerlink" href="#internal-helpers" title="Permanent link">&para;</a></h3>
+<h4 id="_launch-process"><code>_launch() → process</code><a class="headerlink" href="#_launch-process" title="Permanent link">&para;</a></h4>
+<p>Called in an executor. Runs <code>stem.process.launch_tor_with_config()</code> <strong>without</strong> a
+<code>timeout=</code> parameter — Stem's timeout uses <code>signal.SIGALRM</code> which only works from the
+main thread. The 120-second timeout is handled by <code>asyncio.wait_for</code> in <code>start()</code>.</p>
+<p>Tor config:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="s2">&quot;SocksPort&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">socks_port</span><span class="p">),</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="s2">&quot;ControlPort&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">control_port</span><span class="p">),</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="s2">&quot;DataDirectory&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">data_dir</span><span class="p">),</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="s2">&quot;Log&quot;</span><span class="p">:</span> <span class="s2">&quot;notice stderr&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="s2">&quot;ExitPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;reject *:*&quot;</span><span class="p">,</span>    <span class="c1"># not an exit node</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+</code></pre></div></p>
+<p><code>take_ownership=True</code> — Tor shuts down automatically if the controlling process dies.</p>
+<h4 id="_create_hidden_serviceprivate_key-bytes-hs_port-int-str"><code>_create_hidden_service(private_key: bytes, hs_port: int) → str</code><a class="headerlink" href="#_create_hidden_serviceprivate_key-bytes-hs_port-int-str" title="Permanent link">&para;</a></h4>
+<p>Converts the 32-byte Ed25519 seed to the 64-byte expanded key format Tor expects,
+then calls <code>controller.create_ephemeral_hidden_service()</code> with:</p>
+<ul>
+<li><code>ports={80: hs_port}</code> — external port 80 maps to internal <code>hs_port</code></li>
+<li><code>key_type="ED25519-V3"</code></li>
+<li><code>await_publication=True</code> — blocks until the HS descriptor is published to the
+  Tor DHT and the service is reachable</li>
+</ul>
+<p>Returns <code>service_id + ".onion"</code>.</p>
+<h4 id="_ed25519_seed_to_expandedseed-bytes-bytes"><code>_ed25519_seed_to_expanded(seed: bytes) → bytes</code><a class="headerlink" href="#_ed25519_seed_to_expandedseed-bytes-bytes" title="Permanent link">&para;</a></h4>
+<p>Derives the 64-byte expanded Ed25519 private key from a 32-byte seed.
+Implements RFC 8032 clamping:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">h</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="n">sha512</span><span class="p">(</span><span class="n">seed</span><span class="p">))</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&amp;=</span> <span class="mi">248</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">h</span><span class="p">[</span><span class="mi">31</span><span class="p">]</span> <span class="o">&amp;=</span> <span class="mi">127</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">h</span><span class="p">[</span><span class="mi">31</span><span class="p">]</span> <span class="o">|=</span> <span class="mi">64</span>
+</code></pre></div>
+The resulting public key is identical to <code>nacl.signing.SigningKey(seed).verify_key</code>,
+ensuring the <code>.onion</code> address matches <code>identity.derive_onion_address(public_key)</code>.</p>
+<h3 id="torerror-exception"><code>TorError</code> (exception)<a class="headerlink" href="#torerror-exception" title="Permanent link">&para;</a></h3>
+<p>Raised for any Tor startup, bootstrap, or Hidden Service creation failure.</p>
+<hr />
+<h2 id="nodepy">node.py<a class="headerlink" href="#nodepy" title="Permanent link">&para;</a></h2>
+<p>Incoming WebSocket server. Accepts one message per connection, validates it,
+and dispatches it to the application handler.</p>
+<h3 id="nodeserver-class"><code>NodeServer</code> (class)<a class="headerlink" href="#nodeserver-class" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">NodeServer</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8765</span><span class="p">)</span>
+</code></pre></div>
+<p>Binds exclusively to <code>127.0.0.1</code> — not accessible from the network directly.
+Tor's Hidden Service maps the external <code>.onion:80</code> to this port.</p>
+<h4 id="starthandler-messagehandler-none"><code>start(handler: MessageHandler) → None</code><a class="headerlink" href="#starthandler-messagehandler-none" title="Permanent link">&para;</a></h4>
+<p>Starts the websockets server. <code>handler</code> is an async callable <code>(msg: dict) → None</code>
+called for every valid, authenticated message.</p>
+<h4 id="stop-none_1"><code>stop() → None</code><a class="headerlink" href="#stop-none_1" title="Permanent link">&para;</a></h4>
+<p>Closes the server and waits for active handler coroutines to finish.</p>
+<h4 id="_handlewebsocket-handler-none"><code>_handle(websocket, handler) → None</code><a class="headerlink" href="#_handlewebsocket-handler-none" title="Permanent link">&para;</a></h4>
+<p>Per-connection coroutine:</p>
+<ol>
+<li><code>await websocket.recv()</code> with 30-second timeout — idle connections are dropped</li>
+<li><code>parse_message(raw)</code> — invalid JSON: silent drop</li>
+<li><code>validate_message(msg)</code> — invalid signature/TTL/id: silent drop</li>
+<li><code>await handler(msg)</code> — application-level processing</li>
+</ol>
+<p><code>max_size = 12 MB</code> — accommodates 5 MB files after base64 encoding and encryption overhead.</p>
+<p>Any <code>ProtocolError</code> in steps 2–3 results in a <strong>silent drop with no response</strong>.
+This is intentional: not responding reveals nothing about whether the address is active.</p>
+<h3 id="messagehandler-type-alias"><code>MessageHandler</code> type alias<a class="headerlink" href="#messagehandler-type-alias" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">MessageHandler</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
+</code></pre></div>
+<hr />
+<h2 id="clientpy">client.py<a class="headerlink" href="#clientpy" title="Permanent link">&para;</a></h2>
+<p>Outgoing WebSocket client. Connects to a remote <code>.onion</code> address through Tor's SOCKS5
+proxy and sends a single message.</p>
+<h3 id="send_messagemsg-onion_address-socks_host-socks_port-hs_port-none"><code>send_message(msg, onion_address, *, socks_host, socks_port, hs_port) → None</code><a class="headerlink" href="#send_messagemsg-onion_address-socks_host-socks_port-hs_port-none" title="Permanent link">&para;</a></h3>
+<p>Main entry point. Called by <code>DeliveryQueue._try_deliver()</code> for each delivery attempt.</p>
+<ol>
+<li>Opens a SOCKS5 connection to <code>onion_address:hs_port</code> through the Tor proxy
+   (<code>asyncio.wait_for</code> with 60-second timeout)</li>
+<li>Hands the socket to <code>websockets.asyncio.client.connect()</code></li>
+<li>Sends <code>json.dumps(msg)</code> over the WebSocket</li>
+<li>Closes the connection</li>
+</ol>
+<p>Raises <code>NodeClientError</code> on any connection or send failure.</p>
+<h3 id="socks5-implementation">SOCKS5 implementation<a class="headerlink" href="#socks5-implementation" title="Permanent link">&para;</a></h3>
+<p>A minimal SOCKS5 client is implemented from scratch to avoid introducing extra
+dependencies and to keep the connection fully under application control.</p>
+<h4 id="_socks5_connecthost-port-proxy_host-proxy_port-socket"><code>_socks5_connect(host, port, proxy_host, proxy_port) → socket</code><a class="headerlink" href="#_socks5_connecthost-port-proxy_host-proxy_port-socket" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Opens TCP connection to the Tor SOCKS5 proxy</li>
+<li>Calls <code>_socks5_handshake()</code> with no-auth method</li>
+<li>Sets the socket to non-blocking mode</li>
+<li>Returns the connected socket (ready for websockets handover)</li>
+</ol>
+<h4 id="_socks5_handshakesock-host-port-none"><code>_socks5_handshake(sock, host, port) → None</code><a class="headerlink" href="#_socks5_handshakesock-host-port-none" title="Permanent link">&para;</a></h4>
+<p>Implements SOCKS5 protocol (RFC 1928):</p>
+<ol>
+<li>Sends greeting: <code>[VER=5, NMETHODS=1, METHOD=0 (no auth)]</code></li>
+<li>Verifies server accepts no-auth method</li>
+<li>Sends CONNECT request with <code>ATYP=DOMAIN</code> and hostname as bytes</li>
+<li>Reads and validates the response header (4 bytes)</li>
+<li>Discards the bound address (IPv4, domain, or IPv6)</li>
+</ol>
+<p>The domain name is sent as bytes — Tor resolves the <code>.onion</code> address internally
+via its own DHT, never using the operating system's DNS.</p>
+<h4 id="_recv_exactsock-n-bytes"><code>_recv_exact(sock, n) → bytes</code><a class="headerlink" href="#_recv_exactsock-n-bytes" title="Permanent link">&para;</a></h4>
+<p>Reads exactly <code>n</code> bytes from a blocking socket, looping until all bytes arrive.
+Raises <code>OSError</code> if the connection closes unexpectedly.</p>
+<hr />
+<h2 id="relaypy">relay.py<a class="headerlink" href="#relaypy" title="Permanent link">&para;</a></h2>
+<p>Selects between direct delivery and relay-assisted delivery.
+Does not implement the relay wire protocol — that is handled by <code>client.py</code> (which
+sends the message to the relay's onion address like any other node).</p>
+<div class="admonition warning">
+<p class="admonition-title">Relay protocol not yet active</p>
+<p>The relay WebSocket server (<code>legion-relay</code>) expects <code>relay_send</code>-type messages,
+but <code>send_via_relay()</code> currently sends standard Legion protocol messages.
+Relay functionality is architecturally present but not fully operational.
+See <code>legion-relay</code> documentation for the planned protocol.</p>
+</div>
+<h3 id="functions">Functions<a class="headerlink" href="#functions" title="Permanent link">&para;</a></h3>
+<h4 id="is_relay_configureddb-bool"><code>is_relay_configured(db) → bool</code><a class="headerlink" href="#is_relay_configureddb-bool" title="Permanent link">&para;</a></h4>
+<p>Returns <code>True</code> if a relay is configured and enabled in the database.</p>
+<h4 id="get_relay_oniondb-str"><code>get_relay_onion(db) → str</code><a class="headerlink" href="#get_relay_oniondb-str" title="Permanent link">&para;</a></h4>
+<p>Returns the relay's <code>.onion</code> address. Raises <code>RelayError</code> if not configured or disabled.</p>
+<h4 id="send_via_relaydb-msg-socks_host-socks_port-none"><code>send_via_relay(db, msg, *, socks_host, socks_port) → None</code><a class="headerlink" href="#send_via_relaydb-msg-socks_host-socks_port-none" title="Permanent link">&para;</a></h4>
+<p>Sends <code>msg</code> to the configured relay node via <code>send_message()</code>.
+The relay is responsible for forwarding to the actual recipient.</p>
+<h4 id="choose_destinationdb-recipient_onion-tuplestr-bool"><code>choose_destination(db, recipient_onion) → tuple[str, bool]</code><a class="headerlink" href="#choose_destinationdb-recipient_onion-tuplestr-bool" title="Permanent link">&para;</a></h4>
+<p>Returns <code>(destination_onion, via_relay)</code>:</p>
+<ul>
+<li>If relay is configured and enabled: <code>(relay_onion, True)</code></li>
+<li>Otherwise: <code>(recipient_onion, False)</code></li>
+</ul>
+<p>Called by the API layer when enqueuing a new message to determine routing.
+The <code>via_relay</code> flag is stored in the delivery queue entry.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

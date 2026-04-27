@@ -1,0 +1,2459 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Technical reference for the Legion decentralized messaging platform">
+      
+      
+        <meta name="author" content="n3ur0-f4ll">
+      
+      
+      
+        <link rel="prev" href="../overview/">
+      
+      
+        <link rel="next" href="../network/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Core layer - Legion — Technical Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#core-layer" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Legion — Technical Documentation" class="md-header__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Legion — Technical Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Core layer
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
+          
+  
+  
+  legion-node
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../gui/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-gui
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../relay/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-relay
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Legion — Technical Documentation" class="md-nav__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Legion — Technical Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-node
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-node
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core layer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#identitypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identity.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="identity.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identity-dataclass-frozen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity (dataclass, frozen)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generatealias-str-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate(alias: str) → Identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encrypt_private_keyprivate_key-bytes-password-str-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        encrypt_private_key(private_key: bytes, password: str) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrypt_private_keyblob-bytes-password-str-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrypt_private_key(blob: bytes, password: str) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signing_keyidentity-identity-naclsigningsigningkey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        signing_key(identity: Identity) → nacl.signing.SigningKey
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derive_onion_addresspublic_key-bytes-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        derive_onion_address(public_key: bytes) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cryptopy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        crypto.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="crypto.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-type-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key type notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signprivate_key-bytes-data-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sign(private_key: bytes, data: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verifypublic_key-bytes-data-bytes-signature-bytes-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        verify(public_key: bytes, data: bytes, signature: bytes) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encryptsender_private_key-bytes-recipient_public_key-bytes-plaintext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        encrypt(sender_private_key: bytes, recipient_public_key: bytes, plaintext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decryptrecipient_private_key-bytes-sender_public_key-bytes-ciphertext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrypt(recipient_private_key: bytes, sender_public_key: bytes, ciphertext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encrypt_groupgroup_key-bytes-plaintext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        encrypt_group(group_key: bytes, plaintext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrypt_groupgroup_key-bytes-ciphertext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrypt_group(group_key: bytes, ciphertext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate_group_key-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate_group_key() → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storagepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        storage.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="storage.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#opening-a-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opening a connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema migrations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods-by-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods by table
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods by table">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Messages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group-members" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group members
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group-posts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group posts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delivery-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delivery queue
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protocolpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protocol.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="protocol.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#message-types-constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message types (constants)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wire-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wire format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build_messagetype-from_key-to_key-payload-private_key-ttl-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_message(type, from_key, to_key, payload, private_key, ttl) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parse_messageraw-str-bytes-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parse_message(raw: str | bytes) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validate_messagemsg-dict-now-int-none-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_message(msg: dict, now: int | None) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contact-card-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contact card functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contact card functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build_contact_cardpublic_key-onion_address-private_key-alias_hint-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_contact_card(public_key, onion_address, private_key, alias_hint) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validate_contact_cardcard-dict-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_contact_card(card: dict) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exceptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-gui
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-gui
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gui/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-relay
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-relay
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../relay/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#identitypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identity.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="identity.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identity-dataclass-frozen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity (dataclass, frozen)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generatealias-str-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate(alias: str) → Identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encrypt_private_keyprivate_key-bytes-password-str-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        encrypt_private_key(private_key: bytes, password: str) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrypt_private_keyblob-bytes-password-str-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrypt_private_key(blob: bytes, password: str) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signing_keyidentity-identity-naclsigningsigningkey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        signing_key(identity: Identity) → nacl.signing.SigningKey
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#derive_onion_addresspublic_key-bytes-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        derive_onion_address(public_key: bytes) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cryptopy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        crypto.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="crypto.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-type-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key type notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signprivate_key-bytes-data-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sign(private_key: bytes, data: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verifypublic_key-bytes-data-bytes-signature-bytes-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        verify(public_key: bytes, data: bytes, signature: bytes) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encryptsender_private_key-bytes-recipient_public_key-bytes-plaintext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        encrypt(sender_private_key: bytes, recipient_public_key: bytes, plaintext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decryptrecipient_private_key-bytes-sender_public_key-bytes-ciphertext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrypt(recipient_private_key: bytes, sender_public_key: bytes, ciphertext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#encrypt_groupgroup_key-bytes-plaintext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        encrypt_group(group_key: bytes, plaintext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decrypt_groupgroup_key-bytes-ciphertext-bytes-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decrypt_group(group_key: bytes, ciphertext: bytes) → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generate_group_key-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        generate_group_key() → bytes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storagepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        storage.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="storage.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#opening-a-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Opening a connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema migrations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods-by-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods by table
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods by table">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relay-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relay config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Messages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group-members" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group members
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group-posts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group posts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delivery-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delivery queue
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protocolpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protocol.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="protocol.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#message-types-constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message types (constants)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wire-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wire format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#functions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build_messagetype-from_key-to_key-payload-private_key-ttl-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_message(type, from_key, to_key, payload, private_key, ttl) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parse_messageraw-str-bytes-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parse_message(raw: str | bytes) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validate_messagemsg-dict-now-int-none-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_message(msg: dict, now: int | None) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contact-card-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contact card functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contact card functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#build_contact_cardpublic_key-onion_address-private_key-alias_hint-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        build_contact_card(public_key, onion_address, private_key, alias_hint) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validate_contact_cardcard-dict-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_contact_card(card: dict) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exceptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="core-layer">Core layer<a class="headerlink" href="#core-layer" title="Permanent link">&para;</a></h1>
+<p>The core layer provides the fundamental building blocks: cryptographic identity,
+all cryptographic operations, database access, and the network message protocol.
+No module in this layer initiates network connections or holds application state.</p>
+<hr />
+<h2 id="identitypy">identity.py<a class="headerlink" href="#identitypy" title="Permanent link">&para;</a></h2>
+<p>Manages the user's Ed25519 keypair and its storage. All operations are pure functions
+or dataclass methods — no side effects beyond what the caller requests.</p>
+<h3 id="identity-dataclass-frozen"><code>Identity</code> (dataclass, frozen)<a class="headerlink" href="#identity-dataclass-frozen" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">Identity</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">public_key</span><span class="p">:</span> <span class="nb">bytes</span>       <span class="c1"># 32 bytes — Ed25519 verify key, also encodes the .onion address</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">private_key</span><span class="p">:</span> <span class="nb">bytes</span>      <span class="c1"># 32 bytes — Ed25519 seed, never leaves the device in plaintext</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">onion_address</span><span class="p">:</span> <span class="nb">str</span>      <span class="c1"># deterministic v3 .onion derived from public_key</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">alias</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># local display name, not transmitted unless included in contact card</span>
+</code></pre></div>
+<p>Frozen — once created the object is immutable. When the alias changes, a new <code>Identity</code>
+instance is constructed from the same keys.</p>
+<h3 id="functions">Functions<a class="headerlink" href="#functions" title="Permanent link">&para;</a></h3>
+<h4 id="generatealias-str-identity"><code>generate(alias: str) → Identity</code><a class="headerlink" href="#generatealias-str-identity" title="Permanent link">&para;</a></h4>
+<p>Generates a fresh Ed25519 keypair using <code>nacl.signing.SigningKey.generate()</code> (CSPRNG).
+Derives the <code>.onion</code> address deterministically. Returns a new <code>Identity</code>.
+Called once, during <code>POST /api/identity/create</code>.</p>
+<h4 id="encrypt_private_keyprivate_key-bytes-password-str-bytes"><code>encrypt_private_key(private_key: bytes, password: str) → bytes</code><a class="headerlink" href="#encrypt_private_keyprivate_key-bytes-password-str-bytes" title="Permanent link">&para;</a></h4>
+<p>Protects the private key seed for storage on disk:</p>
+<ol>
+<li>Generates 16 random bytes of salt (<code>nacl.utils.random</code>)</li>
+<li>Derives a 32-byte encryption key from the password using <strong>Argon2id</strong>
+   (<code>OPSLIMIT_INTERACTIVE</code> / <code>MEMLIMIT_INTERACTIVE</code>)</li>
+<li>Encrypts the seed with <strong>XSalsa20-Poly1305 (SecretBox)</strong></li>
+<li>Returns <code>salt (16 bytes) || ciphertext</code></li>
+</ol>
+<p>Raises <code>ValueError</code> if <code>private_key</code> is not 32 bytes.</p>
+<h4 id="decrypt_private_keyblob-bytes-password-str-bytes"><code>decrypt_private_key(blob: bytes, password: str) → bytes</code><a class="headerlink" href="#decrypt_private_keyblob-bytes-password-str-bytes" title="Permanent link">&para;</a></h4>
+<p>Reverses <code>encrypt_private_key</code>. Splits <code>blob</code> into salt and ciphertext, re-derives
+the encryption key with Argon2id, decrypts with SecretBox.
+Raises <code>nacl.exceptions.CryptoError</code> on wrong password or corrupted blob.
+Called during <code>POST /api/identity/unlock</code>.</p>
+<h4 id="signing_keyidentity-identity-naclsigningsigningkey"><code>signing_key(identity: Identity) → nacl.signing.SigningKey</code><a class="headerlink" href="#signing_keyidentity-identity-naclsigningsigningkey" title="Permanent link">&para;</a></h4>
+<p>Reconstructs a libsodium <code>SigningKey</code> from the stored 32-byte seed.
+Used by <code>crypto.sign()</code> and wherever Tor needs the expanded private key.</p>
+<h4 id="derive_onion_addresspublic_key-bytes-str"><code>derive_onion_address(public_key: bytes) → str</code><a class="headerlink" href="#derive_onion_addresspublic_key-bytes-str" title="Permanent link">&para;</a></h4>
+<p>Implements the Tor v3 Hidden Service address specification:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>address = base32(public_key || SHA3-256(&quot;.onion checksum&quot; || public_key || \x03)[0:2] || \x03) + &quot;.onion&quot;
+</code></pre></div>
+The address is a pure function of the public key — identical input always produces
+identical output. Called at identity generation and at Tor HS registration to verify
+the address matches.</p>
+<hr />
+<h2 id="cryptopy">crypto.py<a class="headerlink" href="#cryptopy" title="Permanent link">&para;</a></h2>
+<p>Thin wrappers around libsodium (PyNaCl) operations. No state, no I/O.
+Every function either succeeds or raises a <code>nacl.exceptions</code> error.</p>
+<h3 id="key-type-notes">Key type notes<a class="headerlink" href="#key-type-notes" title="Permanent link">&para;</a></h3>
+<p>Legion identity keys are Ed25519. For Box encryption (asymmetric), they are converted
+to Curve25519 via libsodium's <code>crypto_sign_ed25519_sk_to_curve25519</code> and
+<code>crypto_sign_ed25519_pk_to_curve25519</code>. This conversion is a well-established technique
+used by OpenSSH and other protocols. The conversion is transparent — callers always
+pass Ed25519 keys.</p>
+<h3 id="functions_1">Functions<a class="headerlink" href="#functions_1" title="Permanent link">&para;</a></h3>
+<h4 id="signprivate_key-bytes-data-bytes-bytes"><code>sign(private_key: bytes, data: bytes) → bytes</code><a class="headerlink" href="#signprivate_key-bytes-data-bytes-bytes" title="Permanent link">&para;</a></h4>
+<p>Signs <code>data</code> with an Ed25519 private key seed. Returns 64-byte signature.</p>
+<h4 id="verifypublic_key-bytes-data-bytes-signature-bytes-none"><code>verify(public_key: bytes, data: bytes, signature: bytes) → None</code><a class="headerlink" href="#verifypublic_key-bytes-data-bytes-signature-bytes-none" title="Permanent link">&para;</a></h4>
+<p>Verifies an Ed25519 signature. Raises <code>nacl.exceptions.BadSignatureError</code> on failure.
+Callers treat any exception as invalid and drop the message silently.</p>
+<h4 id="encryptsender_private_key-bytes-recipient_public_key-bytes-plaintext-bytes-bytes"><code>encrypt(sender_private_key: bytes, recipient_public_key: bytes, plaintext: bytes) → bytes</code><a class="headerlink" href="#encryptsender_private_key-bytes-recipient_public_key-bytes-plaintext-bytes-bytes" title="Permanent link">&para;</a></h4>
+<p>Asymmetric authenticated encryption (Box):</p>
+<ol>
+<li>Converts both Ed25519 keys to Curve25519</li>
+<li>Performs X25519 key exchange</li>
+<li>Encrypts with XSalsa20-Poly1305 with a random nonce</li>
+<li>Returns <code>nonce (24 bytes) || ciphertext</code></li>
+</ol>
+<p>Used for: private messages, group invites, group roster updates, key rotation messages.</p>
+<h4 id="decryptrecipient_private_key-bytes-sender_public_key-bytes-ciphertext-bytes-bytes"><code>decrypt(recipient_private_key: bytes, sender_public_key: bytes, ciphertext: bytes) → bytes</code><a class="headerlink" href="#decryptrecipient_private_key-bytes-sender_public_key-bytes-ciphertext-bytes-bytes" title="Permanent link">&para;</a></h4>
+<p>Reverses <code>encrypt()</code>. Raises <code>nacl.exceptions.CryptoError</code> on authentication failure
+or wrong keys.</p>
+<h4 id="encrypt_groupgroup_key-bytes-plaintext-bytes-bytes"><code>encrypt_group(group_key: bytes, plaintext: bytes) → bytes</code><a class="headerlink" href="#encrypt_groupgroup_key-bytes-plaintext-bytes-bytes" title="Permanent link">&para;</a></h4>
+<p>Symmetric authenticated encryption (SecretBox) with a 32-byte group key.
+Returns <code>nonce (24 bytes) || ciphertext</code>. Used for group posts.</p>
+<h4 id="decrypt_groupgroup_key-bytes-ciphertext-bytes-bytes"><code>decrypt_group(group_key: bytes, ciphertext: bytes) → bytes</code><a class="headerlink" href="#decrypt_groupgroup_key-bytes-ciphertext-bytes-bytes" title="Permanent link">&para;</a></h4>
+<p>Reverses <code>encrypt_group()</code>.</p>
+<h4 id="generate_group_key-bytes"><code>generate_group_key() → bytes</code><a class="headerlink" href="#generate_group_key-bytes" title="Permanent link">&para;</a></h4>
+<p>Returns 32 cryptographically random bytes. Used when creating a group or rotating
+the group key after member removal.</p>
+<hr />
+<h2 id="storagepy">storage.py<a class="headerlink" href="#storagepy" title="Permanent link">&para;</a></h2>
+<p>Async SQLite wrapper using <code>aiosqlite</code>. All public methods are <code>async</code>.
+The schema is defined in <code>data/schema.sql</code>; migrations run automatically at startup.</p>
+<h3 id="database-class"><code>Database</code> (class)<a class="headerlink" href="#database-class" title="Permanent link">&para;</a></h3>
+<p>Single connection wrapper. All methods commit immediately after each write.
+WAL journal mode is enabled for better concurrent read performance.</p>
+<h4 id="opening-a-connection">Opening a connection<a class="headerlink" href="#opening-a-connection" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">async</span> <span class="k">with</span> <span class="n">Database</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">db</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="o">...</span>
+</code></pre></div>
+<p><code>open()</code> is an async context manager that:
+1. Opens the aiosqlite connection
+2. Sets <code>row_factory = aiosqlite.Row</code> (rows as dict-like objects)
+3. Enables <code>PRAGMA journal_mode=WAL</code> and <code>PRAGMA foreign_keys=ON</code>
+4. Runs <code>schema.sql</code> via <code>executescript</code>
+5. Applies any pending column migrations (idempotent <code>ALTER TABLE</code> calls)</p>
+<h4 id="schema-migrations">Schema migrations<a class="headerlink" href="#schema-migrations" title="Permanent link">&para;</a></h4>
+<p>Handled by <code>_apply_schema()</code> with a list of <code>ALTER TABLE ... ADD COLUMN</code> statements.
+Each migration is wrapped in <code>try/except</code> — <code>duplicate column name</code> errors are silently
+ignored, making the migration idempotent across restarts and upgrades.</p>
+<h3 id="methods-by-table">Methods by table<a class="headerlink" href="#methods-by-table" title="Permanent link">&para;</a></h3>
+<h4 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save_identity(public_key, private_key, ...)</code></td>
+<td>INSERT OR REPLACE — called once at identity creation</td>
+</tr>
+<tr>
+<td><code>load_identity() → dict \| None</code></td>
+<td>SELECT first row — called at startup and unlock</td>
+</tr>
+<tr>
+<td><code>update_identity_alias(alias)</code></td>
+<td>UPDATE alias field</td>
+</tr>
+<tr>
+<td><code>update_identity_default_ttl(ttl)</code></td>
+<td>UPDATE default_ttl (1h–30d, validated at API layer)</td>
+</tr>
+<tr>
+<td><code>panic_wipe()</code></td>
+<td>DELETE all rows from all tables, then VACUUM</td>
+</tr>
+</tbody>
+</table>
+<h4 id="relay-config">Relay config<a class="headerlink" href="#relay-config" title="Permanent link">&para;</a></h4>
+<p>Single-row table (<code>id=1</code> enforced by CHECK constraint). Stores the optional relay node
+configuration for the current user.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save_relay_config(onion_address, public_key, enabled)</code></td>
+<td>INSERT OR REPLACE with id=1</td>
+</tr>
+<tr>
+<td><code>load_relay_config() → dict \| None</code></td>
+<td>SELECT WHERE id=1</td>
+</tr>
+<tr>
+<td><code>delete_relay_config()</code></td>
+<td>DELETE WHERE id=1</td>
+</tr>
+</tbody>
+</table>
+<p><code>panic_wipe()</code> runs <code>VACUUM</code> after deletion. SQLite <code>VACUUM</code> rewrites the entire
+database file from scratch — freed pages (deleted rows) are not present in the new file.</p>
+<h4 id="contacts">Contacts<a class="headerlink" href="#contacts" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save_contact(public_key, onion_address, alias, trusted_since)</code></td>
+<td>INSERT OR REPLACE</td>
+</tr>
+<tr>
+<td><code>get_contacts() → list[dict]</code></td>
+<td>SELECT all</td>
+</tr>
+<tr>
+<td><code>get_contact(public_key) → dict \| None</code></td>
+<td>SELECT by PK</td>
+</tr>
+<tr>
+<td><code>is_contact(public_key) → bool</code></td>
+<td>EXISTS check — used in message filtering</td>
+</tr>
+<tr>
+<td><code>update_contact_alias(public_key, alias)</code></td>
+<td>UPDATE</td>
+</tr>
+<tr>
+<td><code>delete_contact(public_key)</code></td>
+<td>DELETE</td>
+</tr>
+<tr>
+<td><code>delete_messages_with_peer(peer_key)</code></td>
+<td>DELETE FROM messages WHERE from_key=? OR to_key=?</td>
+</tr>
+</tbody>
+</table>
+<h4 id="messages">Messages<a class="headerlink" href="#messages" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save_message(id, from_key, to_key, payload, signature, timestamp, expires_at, status, file_name, mime_type)</code></td>
+<td>INSERT OR IGNORE — deduplicates by SHA256 id</td>
+</tr>
+<tr>
+<td><code>get_message_by_id(id) → dict \| None</code></td>
+<td>SELECT by PK</td>
+</tr>
+<tr>
+<td><code>get_messages(peer_key, our_key) → list[dict]</code></td>
+<td>SELECT conversation ordered by timestamp</td>
+</tr>
+<tr>
+<td><code>update_message_status(id, status)</code></td>
+<td>UPDATE status field</td>
+</tr>
+<tr>
+<td><code>mark_conversation_read(peer_key, our_key)</code></td>
+<td>UPDATE read_at = now WHERE read_at IS NULL</td>
+</tr>
+<tr>
+<td><code>get_unread_counts(our_key) → dict</code></td>
+<td>{sender_key: count} for unread incoming</td>
+</tr>
+<tr>
+<td><code>cancel_queued(message_id)</code></td>
+<td>DELETE FROM delivery_queue WHERE message_id=?</td>
+</tr>
+<tr>
+<td><code>delete_expired_messages(now)</code></td>
+<td>DELETE WHERE expires_at &lt; now</td>
+</tr>
+</tbody>
+</table>
+<h4 id="groups">Groups<a class="headerlink" href="#groups" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save_group(id, name, group_key, admin_key, is_admin, created_at)</code></td>
+<td>INSERT OR REPLACE — explicit column names to handle added columns</td>
+</tr>
+<tr>
+<td><code>get_groups() → list[dict]</code></td>
+<td>SELECT all</td>
+</tr>
+<tr>
+<td><code>get_group(id) → dict \| None</code></td>
+<td>SELECT by PK</td>
+</tr>
+<tr>
+<td><code>delete_group(id)</code></td>
+<td>DELETE from groups + group_members + group_posts</td>
+</tr>
+<tr>
+<td><code>update_group_key(group_id, new_key)</code></td>
+<td>UPDATE after key rotation</td>
+</tr>
+<tr>
+<td><code>mark_group_read(group_id, now)</code></td>
+<td>UPDATE last_read_at</td>
+</tr>
+<tr>
+<td><code>get_group_unread_count(group_id, our_key) → int</code></td>
+<td>COUNT posts after last_read_at, excluding own posts</td>
+</tr>
+</tbody>
+</table>
+<h4 id="group-members">Group members<a class="headerlink" href="#group-members" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save_group_member(group_id, public_key, added_at, onion_address, alias_hint)</code></td>
+<td>INSERT OR REPLACE</td>
+</tr>
+<tr>
+<td><code>get_group_members(group_id) → list[dict]</code></td>
+<td>SELECT all for group</td>
+</tr>
+<tr>
+<td><code>is_group_member(group_id, public_key) → bool</code></td>
+<td>EXISTS check — used in message filtering</td>
+</tr>
+<tr>
+<td><code>delete_group_member(group_id, public_key)</code></td>
+<td>DELETE</td>
+</tr>
+</tbody>
+</table>
+<p><code>onion_address</code> is stored per-member so posts can be routed peer-to-peer without
+requiring a contact record. <code>alias_hint</code> is the display name suggested at invite time.</p>
+<h4 id="group-posts">Group posts<a class="headerlink" href="#group-posts" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save_group_post(id, group_id, author_key, payload, signature, timestamp, expires_at)</code></td>
+<td>INSERT OR IGNORE</td>
+</tr>
+<tr>
+<td><code>get_group_posts(group_id) → list[dict]</code></td>
+<td>SELECT ordered by timestamp</td>
+</tr>
+<tr>
+<td><code>delete_expired_group_posts(now) → int</code></td>
+<td>DELETE WHERE expires_at &lt; now</td>
+</tr>
+</tbody>
+</table>
+<h4 id="cleanup">Cleanup<a class="headerlink" href="#cleanup" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delete_expired_messages(now) → int</code></td>
+<td>DELETE messages WHERE expires_at &lt; now; returns row count</td>
+</tr>
+<tr>
+<td><code>delete_expired_group_posts(now) → int</code></td>
+<td>DELETE group_posts WHERE expires_at &lt; now; returns row count</td>
+</tr>
+</tbody>
+</table>
+<p>These are not called on a schedule in the current implementation — they are available
+for future use by a maintenance task.</p>
+<h4 id="delivery-queue">Delivery queue<a class="headerlink" href="#delivery-queue" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enqueue(id, message_id, destination_key, destination_onion, next_retry_at, message_json, via_relay)</code></td>
+<td>INSERT OR IGNORE</td>
+</tr>
+<tr>
+<td><code>get_due(now) → list[dict]</code></td>
+<td>SELECT WHERE next_retry_at &lt;= now</td>
+</tr>
+<tr>
+<td><code>update_retry(id, next_retry_at)</code></td>
+<td>UPDATE next_retry_at + increment retry_count</td>
+</tr>
+<tr>
+<td><code>dequeue(id)</code></td>
+<td>DELETE on successful delivery</td>
+</tr>
+</tbody>
+</table>
+<p><code>message_json</code> stores the complete serialised protocol message (JSON string).
+This avoids reconstructing messages from the <code>messages</code> table, which would not work
+for <code>group_invite</code>, <code>group_key_update</code> and other types that are not stored there.</p>
+<hr />
+<h2 id="protocolpy">protocol.py<a class="headerlink" href="#protocolpy" title="Permanent link">&para;</a></h2>
+<p>Defines the wire format for all network messages, builds them, parses them,
+and validates them. No I/O, no state.</p>
+<h3 id="message-types-constants">Message types (constants)<a class="headerlink" href="#message-types-constants" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Wire value</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MSG_PRIVATE</code></td>
+<td><code>"msg"</code></td>
+<td>Private text/file messages</td>
+</tr>
+<tr>
+<td><code>MSG_GROUP_POST</code></td>
+<td><code>"group_post"</code></td>
+<td>Group chat posts</td>
+</tr>
+<tr>
+<td><code>MSG_GROUP_INVITE</code></td>
+<td><code>"group_invite"</code></td>
+<td>Inviting a new group member</td>
+</tr>
+<tr>
+<td><code>MSG_GROUP_MEMBER_UPDATE</code></td>
+<td><code>"group_member_update"</code></td>
+<td>Roster changes (add/remove/leave)</td>
+</tr>
+<tr>
+<td><code>MSG_GROUP_KEY_UPDATE</code></td>
+<td><code>"group_key_update"</code></td>
+<td>Key rotation after member removal</td>
+</tr>
+<tr>
+<td><code>MSG_DELIVERY_ACK</code></td>
+<td><code>"delivery_ack"</code></td>
+<td>Delivery acknowledgement (reserved)</td>
+</tr>
+<tr>
+<td><code>MSG_CONTACT_CARD</code></td>
+<td><code>"contact_card"</code></td>
+<td>Contact card exchange (reserved)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="wire-format">Wire format<a class="headerlink" href="#wire-format" title="Permanent link">&para;</a></h3>
+<p>Every message sent over the network is a JSON object:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;v&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;msg&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;SHA256 of payload, hex&gt;&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">&quot;from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;sender public key, hex&gt;&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">&quot;to&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;recipient public key or group id, hex&gt;&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;base64-encoded ciphertext&gt;&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">&quot;signature&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;base64-encoded Ed25519 signature&gt;&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1714000000</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">&quot;ttl&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">604800</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">}</span>
+</code></pre></div>
+<p>The <strong>signature</strong> covers: <code>type|id|from|to|timestamp</code> (pipe-separated, UTF-8 encoded).
+This binds the signature to the message identity and prevents cross-type replay.</p>
+<h3 id="functions_2">Functions<a class="headerlink" href="#functions_2" title="Permanent link">&para;</a></h3>
+<h4 id="build_messagetype-from_key-to_key-payload-private_key-ttl-dict"><code>build_message(type, from_key, to_key, payload, private_key, ttl) → dict</code><a class="headerlink" href="#build_messagetype-from_key-to_key-payload-private_key-ttl-dict" title="Permanent link">&para;</a></h4>
+<p>Constructs and signs a protocol message:</p>
+<ol>
+<li>Computes <code>id = SHA256(payload).hexdigest()</code></li>
+<li>Sets <code>timestamp = int(time.time())</code></li>
+<li>Signs <code>type|id|from_hex|to_hex|timestamp</code> with the sender's private key</li>
+<li>Returns the complete message dict</li>
+</ol>
+<p><code>payload</code> is expected to be already encrypted by the caller.</p>
+<h4 id="parse_messageraw-str-bytes-dict"><code>parse_message(raw: str | bytes) → dict</code><a class="headerlink" href="#parse_messageraw-str-bytes-dict" title="Permanent link">&para;</a></h4>
+<p>Parses JSON and checks required fields are present.
+Raises <code>MalformedMessage</code> on invalid JSON or missing fields.
+Does <strong>not</strong> verify the signature — that is done by <code>validate_message()</code>.</p>
+<h4 id="validate_messagemsg-dict-now-int-none-none"><code>validate_message(msg: dict, now: int | None) → None</code><a class="headerlink" href="#validate_messagemsg-dict-now-int-none-none" title="Permanent link">&para;</a></h4>
+<p>Full validation pipeline:</p>
+<ol>
+<li>Version check (<code>v == 1</code>)</li>
+<li>Type must be in <code>_VALID_TYPES</code></li>
+<li>Payload must be valid base64</li>
+<li><code>SHA256(payload) == id</code></li>
+<li><code>timestamp</code> must not be more than 300 seconds in the future (clock skew guard)</li>
+<li><code>now - timestamp</code> must not exceed <code>ttl</code> (expiry check)</li>
+<li><code>from</code> must be a valid 32-byte hex public key</li>
+<li>Ed25519 signature must verify against the signed data</li>
+</ol>
+<p>Any failure raises a <code>ProtocolError</code> subclass. The caller is responsible for silently
+dropping the message without sending any response.</p>
+<h3 id="contact-card-functions">Contact card functions<a class="headerlink" href="#contact-card-functions" title="Permanent link">&para;</a></h3>
+<h4 id="build_contact_cardpublic_key-onion_address-private_key-alias_hint-dict"><code>build_contact_card(public_key, onion_address, private_key, alias_hint) → dict</code><a class="headerlink" href="#build_contact_cardpublic_key-onion_address-private_key-alias_hint-dict" title="Permanent link">&para;</a></h4>
+<p>Builds a signed JSON contact card for sharing with potential contacts.
+Signs the entire card (without the <code>signature</code> field) with the owner's private key.</p>
+<h4 id="validate_contact_cardcard-dict-none"><code>validate_contact_card(card: dict) → None</code><a class="headerlink" href="#validate_contact_cardcard-dict-none" title="Permanent link">&para;</a></h4>
+<p>Verifies the Ed25519 signature on a received contact card.
+Raises <code>ProtocolError</code> on failure. Called before adding any contact.</p>
+<h3 id="exceptions">Exceptions<a class="headerlink" href="#exceptions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>Raised when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MalformedMessage</code></td>
+<td>Invalid JSON, missing fields, bad encoding</td>
+</tr>
+<tr>
+<td><code>InvalidSignature</code></td>
+<td>Ed25519 verification failed</td>
+</tr>
+<tr>
+<td><code>ExpiredMessage</code></td>
+<td>Age &gt; TTL or timestamp too far in future</td>
+</tr>
+<tr>
+<td><code>InvalidMessageId</code></td>
+<td>SHA256(payload) ≠ declared id</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

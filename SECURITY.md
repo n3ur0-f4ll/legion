@@ -21,10 +21,112 @@ hides the origin and destination of each connection.
 - Your real IP address is never visible to contacts or relay operators
 - Your contact's IP address is never visible to you
 - Tor relay nodes see only encrypted traffic — never its content
-- Every Legion node operates as a Tor v3 Hidden Service (`.onion` address)
+- Every Legion node operates as a **Tor v3 Hidden Service** (`.onion` address)
 - The node only accepts connections from within Tor — clearnet connections are impossible
-- The `.onion` address is derived deterministically from your Ed25519 public key,
-  so it is stable across restarts and consistent with your identity
+
+### What a .onion address actually is
+
+A Tor v3 `.onion` address is not a random identifier or a hash of something.
+It **is** your Ed25519 public key, encoded in base32 with a 2-byte checksum:
+
+```
+address = base32( public_key (32 bytes)
+                + SHA3-256(".onion checksum" || public_key || version)[0:2]
+                + version byte 0x03 ) + ".onion"
+```
+
+This means the 56-character `.onion` address carries your full 256-bit public key inside it.
+
+### Why this matters for security
+
+When Legion registers your Hidden Service with Tor, it passes your **Ed25519 private key**
+to the Tor process. Tor's Hidden Service introduction protocol then cryptographically proves
+to any connecting client that the service operating at that address possesses the private key
+corresponding to the public key encoded in the address.
+
+Consequences:
+
+- **No impersonation is possible** — to operate a Hidden Service at someone's `.onion`
+  address you would need their private key, which never leaves their device
+- **Address = identity** — knowing someone's `.onion` address means knowing their
+  Ed25519 public key, which means you can verify every signature they produce on messages
+- **Stable across restarts** — because the address is derived deterministically from the
+  key, your `.onion` address does not change between app launches or even across reinstalls
+  (as long as you use the same identity)
+
+### What running a Hidden Service actually exposes — and what it does not
+
+A common concern: "if I run a Hidden Service, does that open my computer to the internet?"
+The answer is no. Here is exactly what happens.
+
+The Legion WebSocket server binds exclusively to `127.0.0.1` (localhost) — it is
+**not reachable from the internet at all**. Tor receives incoming connections from the Tor
+network and forwards them to that loopback address only. Nothing else on your computer
+is accessible through the Hidden Service.
+
+The Tor process is also configured with `ExitPolicy: reject *:*`, which means it does
+**not** act as a Tor exit node and cannot be used to route other people's traffic to
+the internet. This eliminates a common category of legal and abuse-related concerns
+associated with running Tor infrastructure.
+
+**What a connection to your node actually reaches:**
+
+A caller who knows your `.onion` address can connect and send one message.
+That is the entire attack surface. The node then:
+
+1. Accepts the connection (WebSocket, max 12 MB, 30-second timeout)
+2. Parses the message — invalid JSON or missing fields: silent drop, connection closed
+3. Validates the Ed25519 signature and TTL — failure: silent drop, no response
+4. Checks sender against known contacts — unknown sender: silent drop, no response
+5. Processes the message if all checks pass, then closes the connection
+
+An attacker who does not have your contact card does not know your `.onion` address
+and cannot reach your node at all. An attacker who somehow obtains your `.onion` address
+but is not one of your contacts will be silently dropped at step 4 — they receive
+no confirmation that the address is even active.
+
+**In plain terms:** running Legion is no different in risk from using any other
+end-to-end encrypted messenger. The Hidden Service does not open your computer —
+it provides a private, IP-concealing channel for your contacts to reach your
+messaging inbox, and nothing more.
+
+### Attack vectors against the .onion address itself
+
+**Address scanning — not feasible.**
+A Tor v3 address encodes 256 bits of key material. Enumerating even a negligible fraction
+of the address space would require more energy and time than physically exists.
+Brute-forcing the Ed25519 private key from the public key has no known attack faster than
+the brute-force bound — 256-bit security.
+
+**The address is not the secret — the IP is.**
+The `.onion` address is a public key by design; it can be shared freely.
+What Tor protects is your IP address, which is never transmitted to or derivable by
+any party in a connection. Sharing your contact card with someone reveals your
+`.onion` (public key) but nothing about where you are or who you are in the real world.
+
+**Connection flooding (DoS).**
+An attacker who obtains your `.onion` address could attempt to open large numbers of
+connections simultaneously to exhaust resources. This is a real but expensive attack:
+every connection attempt requires building a full Tor circuit (multiple hops, cryptographic
+handshakes), which is resource-intensive for the attacker. Legion's node handles connections
+asynchronously with a 30-second timeout per connection and drops unknown senders immediately.
+This attack cannot compromise your data or reveal your identity — at worst it causes temporary
+slowdowns, similar to a DoS against any server.
+
+**HSDir (Hidden Service Directory) correlation.**
+Tor stores an encrypted descriptor for your Hidden Service in a distributed hash table
+maintained by HSDir nodes. These nodes know a descriptor exists for your address but
+cannot decrypt it (the descriptor is encrypted and signed). An adversary operating many
+HSDir nodes could attempt to correlate *when* you publish or update your descriptor with
+network activity, potentially narrowing down your location. Tor v3 addresses partially
+mitigate this by randomising which HSDir nodes receive each descriptor.
+
+**Traffic timing correlation (global adversary).**
+A nation-state-level adversary able to observe both your internet connection and the
+connections reaching your Hidden Service simultaneously could attempt to correlate timing
+patterns and link your IP to your `.onion`. This is the most realistic advanced threat.
+It requires controlling a significant fraction of the Tor network or access to major
+internet exchange points. See *What Legion does not guarantee* for a full discussion.
 
 ---
 

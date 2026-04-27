@@ -1,0 +1,51 @@
+site_name: Legion — Technical Documentation
+site_description: Technical reference for the Legion decentralized messaging platform
+site_author: n3ur0-f4ll
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+  font:
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Overview: index.md
+  - legion-node:
+    - Overview: node/overview.md
+    - Core layer: node/core.md
+    - Network layer: node/network.md
+    - Messaging layer: node/messaging.md
+    - API server: node/api.md
+  - legion-gui:
+    - Overview: gui/overview.md
+  - legion-relay:
+    - Overview: relay/overview.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.inlinehilite
+  - admonition
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true

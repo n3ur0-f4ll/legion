@@ -2,7 +2,7 @@
 
 **Decentralized. Anonymous. Yours.**
 
-> Version `0.1.5` · Python `≥ 3.12` · Linux only · License: AGPL-3.0
+> Version `0.1.6` · Python `≥ 3.12` · Linux only · License: AGPL-3.0
 
 Legion is a messaging application built from the ground up for privacy and security.
 It requires no central servers, no accounts, and no phone numbers.
@@ -131,6 +131,39 @@ legion/
 
 `legion-node` and `legion-gui` are the two components used by end users.
 `legion-relay` is an optional self-hosted relay that delivers messages when you are offline.
+
+---
+
+## Technical documentation
+
+Full technical reference (classes, functions, API endpoints, database schema) is in the
+`docs/` directory and rendered with [MkDocs](https://www.mkdocs.org/) +
+[Material theme](https://squidfunk.github.io/mkdocs-material/).
+
+### Install
+
+```bash
+pip install mkdocs mkdocs-material
+```
+
+### Live preview (hot-reload)
+
+```bash
+mkdocs serve
+# opens at http://127.0.0.1:8000
+```
+
+### Build static HTML
+
+```bash
+mkdocs build        # output: site/
+```
+
+### Deploy to GitHub Pages
+
+```bash
+mkdocs gh-deploy    # publishes to username.github.io/legion
+```
 
 ---
 

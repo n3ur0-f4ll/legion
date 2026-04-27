@@ -1,0 +1,1759 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Technical reference for the Legion decentralized messaging platform">
+      
+      
+        <meta name="author" content="n3ur0-f4ll">
+      
+      
+      
+        <link rel="prev" href="../../node/api/">
+      
+      
+        <link rel="next" href="../../relay/overview/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Overview - Legion — Technical Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#legion-gui-overview" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Legion — Technical Documentation" class="md-header__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Legion — Technical Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../node/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-node
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  legion-gui
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../relay/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-relay
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Legion — Technical Documentation" class="md-nav__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Legion — Technical Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-node
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-node
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../node/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../node/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../node/network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../node/messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../node/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-gui
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-gui
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appmainpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app/main.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="app/main.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        main() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_start_nodeapi_port-subprocesspopen-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _start_node(api_port) → subprocess.Popen | None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_wait_for_nodeapi_port-timeout-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _wait_for_node(api_port, timeout) → bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_install_xdg_resourcesicon_path-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _install_xdg_resources(icon_path) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_apply_gtk_icon-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _apply_gtk_icon() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appbridgepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app/bridge.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="app/bridge.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#legionbridge-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LegionBridge (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LegionBridge (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_api_port-int" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_api_port() → int
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_version-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_version() → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy_to_clipboardtext-str-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        copy_to_clipboard(text: str) → bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save_filebase64_data-str-filename-str-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        save_file(base64_data: str, filename: str) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#show_notificationtitle-str-message-str-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        show_notification(title: str, message: str) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ui-frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ui/ — Frontend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ui/ — Frontend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#startup-sequence-in-javascript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Startup sequence in JavaScript
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#panels-inside-view-main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Panels (inside view-main)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-javascript-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key JavaScript state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-ttl-picker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message TTL picker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network log
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.py
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-relay
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-relay
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../relay/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appmainpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app/main.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="app/main.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#main-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        main() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_start_nodeapi_port-subprocesspopen-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _start_node(api_port) → subprocess.Popen | None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_wait_for_nodeapi_port-timeout-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _wait_for_node(api_port, timeout) → bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_install_xdg_resourcesicon_path-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _install_xdg_resources(icon_path) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_apply_gtk_icon-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _apply_gtk_icon() → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appbridgepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        app/bridge.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="app/bridge.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#legionbridge-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LegionBridge (class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="LegionBridge (class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_api_port-int" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_api_port() → int
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get_version-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_version() → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#copy_to_clipboardtext-str-bool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        copy_to_clipboard(text: str) → bool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save_filebase64_data-str-filename-str-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        save_file(base64_data: str, filename: str) → str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#show_notificationtitle-str-message-str-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        show_notification(title: str, message: str) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ui-frontend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ui/ — Frontend
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ui/ — Frontend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#startup-sequence-in-javascript" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Startup sequence in JavaScript
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#views" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Views
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#panels-inside-view-main" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Panels (inside view-main)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-javascript-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key JavaScript state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-ttl-picker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message TTL picker
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network log
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.py
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="legion-gui-overview">legion-gui — Overview<a class="headerlink" href="#legion-gui-overview" title="Permanent link">&para;</a></h1>
+<p><code>legion-gui</code> is the desktop interface for Legion. It is built with <strong>pywebview</strong> (GTK/WebKit2
+backend on Linux) and renders a vanilla HTML/CSS/JS single-page application inside a native
+window. It acts as a launcher for <code>legion-node</code> — the user only runs <code>legion-gui</code>.</p>
+<hr />
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python3 legion-gui/app/main.py
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>          │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>          ├─ spawns ──► legion-node/main.py --no-interactive
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>          │              stdin=DEVNULL  stdout/stderr=node.log
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>          │              (subprocess, log → ~/.local/share/legion/node.log)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>          │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>          ├─ waits ───► GET /api/status (polls until HTTP 200)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>          │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>          └─ opens ───► pywebview window
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                         ├── http_server=True   (Bottle serves ui/ directory)
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                         ├── gui=&quot;gtk&quot;
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                         └── js_api=LegionBridge
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                               │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                               ├── GET /api/*  ────► FastAPI (localhost:8080)
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                               └── SSE /api/events  (live updates)
+</code></pre></div>
+<p>The node subprocess has <code>stdin=DEVNULL</code> and <code>stdout/stderr</code> redirected to a log file.
+This prevents node output from appearing in the user's terminal and avoids terminal
+state corruption.</p>
+<hr />
+<h2 id="appmainpy">app/main.py<a class="headerlink" href="#appmainpy" title="Permanent link">&para;</a></h2>
+<p>Entry point. Orchestrates startup and shutdown.</p>
+<h3 id="functions">Functions<a class="headerlink" href="#functions" title="Permanent link">&para;</a></h3>
+<h4 id="main-none"><code>main() → None</code><a class="headerlink" href="#main-none" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Parses CLI args (<code>--api-port</code>, <code>--debug</code>)</li>
+<li>Checks if node is already running (<code>_wait_for_node(timeout=1)</code>) — attaches if so</li>
+<li>Calls <code>_start_node()</code> and waits up to 30 seconds for it to become ready</li>
+<li>Sets GTK app name and application name via <code>GLib.set_prgname("legion")</code> /
+   <code>GLib.set_application_name("Legion")</code> — must be called <strong>before</strong> <code>create_window</code>
+   so the Wayland compositor identifies the app correctly (taskbar icon)</li>
+<li>Installs XDG resources if logo is present</li>
+<li>Creates pywebview window with <code>LegionBridge</code> as <code>js_api</code></li>
+<li>Registers <code>on_closed</code> callback to terminate the node when window closes</li>
+<li>Calls <code>webview.start(http_server=True, gui="gtk", func=_apply_gtk_icon)</code></li>
+<li>After <code>start()</code> returns (window closed): waits up to 5 seconds for node to exit,
+   then kills if still running</li>
+<li>Calls <code>os._exit(0)</code> — <strong>intentional</strong>, bypasses normal Python shutdown to kill the
+    Bottle HTTP server thread that pywebview creates internally and which does not
+    terminate via normal <code>sys.exit()</code></li>
+</ol>
+<h4 id="_start_nodeapi_port-subprocesspopen-none"><code>_start_node(api_port) → subprocess.Popen | None</code><a class="headerlink" href="#_start_nodeapi_port-subprocesspopen-none" title="Permanent link">&para;</a></h4>
+<p>Spawns <code>legion-node/main.py --no-interactive --api-port={api_port}</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_NODE_MAIN</span><span class="p">),</span> <span class="s2">&quot;--no-interactive&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;--api-port=</span><span class="si">{</span><span class="n">api_port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">],</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">cwd</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">_NODE_DIR</span><span class="p">),</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">stdout</span><span class="o">=</span><span class="n">log_file</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">stderr</span><span class="o">=</span><span class="n">log_file</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
+</code></pre></div>
+<p>Log file: <code>~/.local/share/legion/node.log</code>. The parent closes its copy of <code>log_file</code>
+after <code>Popen()</code> — the child retains its own file descriptor (standard Unix fork behaviour).</p>
+<h4 id="_wait_for_nodeapi_port-timeout-bool"><code>_wait_for_node(api_port, timeout) → bool</code><a class="headerlink" href="#_wait_for_nodeapi_port-timeout-bool" title="Permanent link">&para;</a></h4>
+<p>Polls <code>GET http://127.0.0.1:{api_port}/api/status</code> every 300ms until a successful
+response or timeout. Returns <code>True</code> if the node became reachable within the timeout.</p>
+<h4 id="_install_xdg_resourcesicon_path-none"><code>_install_xdg_resources(icon_path) → None</code><a class="headerlink" href="#_install_xdg_resourcesicon_path-none" title="Permanent link">&para;</a></h4>
+<p>Installs the application icon and <code>.desktop</code> file to <code>~/.local/share/</code> on every launch.
+This is idempotent — safe to call repeatedly.</p>
+<ul>
+<li>Copies <code>icon_path</code> to <code>~/.local/share/icons/hicolor/256x256/apps/legion.png</code></li>
+<li>Runs <code>gtk-update-icon-cache</code> (best-effort, failure ignored)</li>
+<li>Writes <code>~/.local/share/applications/legion.desktop</code></li>
+</ul>
+<p>Must be called <strong>before</strong> <code>create_window</code> so the Wayland compositor has the icon
+available when the window first appears.</p>
+<h4 id="_apply_gtk_icon-none"><code>_apply_gtk_icon() → None</code><a class="headerlink" href="#_apply_gtk_icon-none" title="Permanent link">&para;</a></h4>
+<p>Called via <code>func=</code> parameter of <code>webview.start()</code> — runs after the GTK main loop starts.
+Sets the window icon via <code>Gtk.Window.set_default_icon()</code> as an additional path for
+environments that don't pick up the XDG icon immediately.</p>
+<hr />
+<h2 id="appbridgepy">app/bridge.py<a class="headerlink" href="#appbridgepy" title="Permanent link">&para;</a></h2>
+<p>The pywebview JS/Python bridge. Exposed as <code>window.pywebview.api</code> in the browser context.
+All methods are called from JavaScript and execute in the Python process.</p>
+<h3 id="legionbridge-class"><code>LegionBridge</code> (class)<a class="headerlink" href="#legionbridge-class" title="Permanent link">&para;</a></h3>
+<h4 id="get_api_port-int"><code>get_api_port() → int</code><a class="headerlink" href="#get_api_port-int" title="Permanent link">&para;</a></h4>
+<p>Returns the API port. Called once at boot from JavaScript to configure the base URL
+for all API calls.</p>
+<h4 id="get_version-str"><code>get_version() → str</code><a class="headerlink" href="#get_version-str" title="Permanent link">&para;</a></h4>
+<p>Reads and returns the content of the <code>VERSION</code> file from the monorepo root.
+Displayed in the sidebar as a version label.</p>
+<h4 id="copy_to_clipboardtext-str-bool"><code>copy_to_clipboard(text: str) → bool</code><a class="headerlink" href="#copy_to_clipboardtext-str-bool" title="Permanent link">&para;</a></h4>
+<p>Copies <code>text</code> to the system clipboard. Detects Wayland vs X11 automatically:</p>
+<ol>
+<li>Tries <code>wl-copy</code> (Wayland)</li>
+<li>Falls back to <code>xclip -selection clipboard</code> or <code>xsel --clipboard --input</code> (X11)</li>
+</ol>
+<p>Returns <code>True</code> on success, <code>False</code> if no clipboard tool is available.
+Runs synchronously (subprocess call) — acceptable for clipboard operations.</p>
+<h4 id="save_filebase64_data-str-filename-str-str"><code>save_file(base64_data: str, filename: str) → str</code><a class="headerlink" href="#save_filebase64_data-str-filename-str-str" title="Permanent link">&para;</a></h4>
+<p>Saves a base64-encoded file to <code>~/Downloads/</code>. Returns the full path, or <code>""</code> on failure.</p>
+<ol>
+<li>Sanitizes filename with <code>re.sub(r'[/\\:*?"&lt;&gt;|]', "_", filename)</code> — replaces all
+   path-unsafe characters, falls back to <code>"file"</code> if result is empty</li>
+<li>Creates <code>~/Downloads/</code> if it does not exist</li>
+<li>Avoids overwriting existing files by appending a counter (<code>photo_1.jpg</code>, <code>photo_2.jpg</code>)</li>
+<li>Writes decoded bytes and returns the final path, or <code>""</code> on any exception</li>
+</ol>
+<h4 id="show_notificationtitle-str-message-str-none"><code>show_notification(title: str, message: str) → None</code><a class="headerlink" href="#show_notificationtitle-str-message-str-none" title="Permanent link">&para;</a></h4>
+<p>Sends a desktop notification via <code>notify-send</code>. Best-effort — failure is silently ignored.</p>
+<hr />
+<h2 id="ui-frontend">ui/ — Frontend<a class="headerlink" href="#ui-frontend" title="Permanent link">&para;</a></h2>
+<p>Single-page application: one <code>index.html</code>, one <code>style.css</code>, one <code>app.js</code>. No build tools,
+no frameworks, no npm. Served by pywebview's embedded Bottle HTTP server.</p>
+<h3 id="startup-sequence-in-javascript">Startup sequence in JavaScript<a class="headerlink" href="#startup-sequence-in-javascript" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>DOMContentLoaded
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    └─ if window.pywebview: boot()
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>       else: window.addEventListener(&quot;pywebviewready&quot;, boot)
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>               │
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>               ▼
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>             boot()
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>               ├─ API_PORT = await window.pywebview.api.get_api_port()
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>               └─ initApp()
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>                     ├─ GET /api/status
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>                     ├─ identity_loaded → showMain()
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>                     ├─ identity_exists → showView(&quot;unlock&quot;)
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>                     └─ neither        → showView(&quot;onboarding&quot;)
+</code></pre></div>
+<p>The bridge (<code>window.pywebview.api</code>) is not available at <code>DOMContentLoaded</code> — it becomes
+available asynchronously and fires <code>pywebviewready</code>. Both paths are handled.</p>
+<h3 id="views">Views<a class="headerlink" href="#views" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>View id</th>
+<th>When shown</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>view-unlock</code></td>
+<td>Identity exists, password not yet entered</td>
+</tr>
+<tr>
+<td><code>view-onboarding</code></td>
+<td>First launch, no identity</td>
+</tr>
+<tr>
+<td><code>view-main</code></td>
+<td>Identity loaded and Tor running/starting</td>
+</tr>
+</tbody>
+</table>
+<h3 id="panels-inside-view-main">Panels (inside <code>view-main</code>)<a class="headerlink" href="#panels-inside-view-main" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Panel id</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>panel-welcome</code></td>
+<td>Empty state placeholder</td>
+</tr>
+<tr>
+<td><code>panel-messages</code></td>
+<td>Private conversation with current contact</td>
+</tr>
+<tr>
+<td><code>panel-group</code></td>
+<td>Group chat with member list</td>
+</tr>
+<tr>
+<td><code>panel-network</code></td>
+<td>Network log with bandwidth display</td>
+</tr>
+<tr>
+<td><code>panel-opsec</code></td>
+<td>OpSec guide</td>
+</tr>
+<tr>
+<td><code>panel-settings</code></td>
+<td>Settings: alias, TTL, relay, panic button</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-javascript-state">Key JavaScript state<a class="headerlink" href="#key-javascript-state" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>API_PORT</code></td>
+<td><code>number</code></td>
+<td>Port for all API calls</td>
+</tr>
+<tr>
+<td><code>identity</code></td>
+<td><code>object \| null</code></td>
+<td>Current identity (public_key, alias, default_ttl, ...)</td>
+</tr>
+<tr>
+<td><code>currentContact</code></td>
+<td><code>object \| null</code></td>
+<td>Open conversation contact</td>
+</tr>
+<tr>
+<td><code>currentGroup</code></td>
+<td><code>object \| null</code></td>
+<td>Open group</td>
+</tr>
+<tr>
+<td><code>eventSource</code></td>
+<td><code>EventSource \| null</code></td>
+<td>Active SSE connection</td>
+</tr>
+<tr>
+<td><code>pendingFile</code></td>
+<td><code>object \| null</code></td>
+<td>File selected for attachment</td>
+</tr>
+<tr>
+<td><code>networkLog</code></td>
+<td><code>array</code></td>
+<td>Ring buffer of last 200 network log entries</td>
+</tr>
+<tr>
+<td><code>defaultTtl</code></td>
+<td><code>number</code></td>
+<td>Global default TTL in seconds</td>
+</tr>
+<tr>
+<td><code>msgTtl</code></td>
+<td><code>number \| null</code></td>
+<td>Per-message TTL override (null = use default)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-helper">API helper<a class="headerlink" href="#api-helper" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">async</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">api</span><span class="p">(</span><span class="nx">method</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="nx">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">any</span>
+</code></pre></div>
+<p>All API calls go through this function. Handles:
+- JSON serialisation of request body
+- HTTP error handling (including FastAPI Pydantic validation error arrays)
+- Returns parsed JSON or null for HTTP 204</p>
+<h3 id="sse-connection">SSE connection<a class="headerlink" href="#sse-connection" title="Permanent link">&para;</a></h3>
+<p><code>connectSSE()</code> opens <code>EventSource</code> to <code>/api/events</code>. On disconnect, retries after 5 seconds.
+<code>handleEvent(event)</code> dispatches by <code>event.type</code> to update the relevant UI components.</p>
+<h3 id="message-ttl-picker">Message TTL picker<a class="headerlink" href="#message-ttl-picker" title="Permanent link">&para;</a></h3>
+<p>The <code>⏱</code> button in the message input row opens a dropdown with TTL presets.
+State:
+- <code>defaultTtl</code> — loaded from <code>identity.default_ttl</code> at login
+- <code>msgTtl</code> — per-message override; null means use <code>defaultTtl</code>; reset to null after send</p>
+<h3 id="network-log">Network log<a class="headerlink" href="#network-log" title="Permanent link">&para;</a></h3>
+<p><code>appendNetLog(entry)</code> adds entries to the DOM only if <code>panel-network</code> is visible.
+<code>renderNetLog()</code> re-renders all entries when the filter changes or the panel is opened.
+<code>netLogAutoScroll</code> pauses auto-scroll when the user has scrolled up.</p>
+<hr />
+<h2 id="configpy">config.py<a class="headerlink" href="#configpy" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">:</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">api_port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8080</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Legion&quot;</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1100</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">720</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">min_width</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">800</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">min_height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">550</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</code></pre></div>
+<p>Simple dataclass, no external dependencies. Modified by CLI args in <code>main.py</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

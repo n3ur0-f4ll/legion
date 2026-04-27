@@ -1,0 +1,2426 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Technical reference for the Legion decentralized messaging platform">
+      
+      
+        <meta name="author" content="n3ur0-f4ll">
+      
+      
+      
+        <link rel="prev" href="../messaging/">
+      
+      
+        <link rel="next" href="../../gui/overview/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>API server - Legion — Technical Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-server" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Legion — Technical Documentation" class="md-header__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Legion — Technical Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API server
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
+          
+  
+  
+  legion-node
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../gui/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-gui
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../relay/overview/" class="md-tabs__link">
+          
+  
+  
+  legion-relay
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Legion — Technical Documentation" class="md-nav__button md-logo" aria-label="Legion — Technical Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Legion — Technical Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-node
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-node
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API server
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#appstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AppState
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AppState">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#push_eventevent_type-data-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        push_event(event_type, data) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#push_network_loglevel-category-text-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        push_network_log(level, category, text) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on_message_deliveredmessage_id-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_message_delivered(message_id) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create_appstate-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_app(state) → FastAPI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="create_app(state) → FastAPI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependency-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dependency functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_state-appstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_state() → AppState
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_identitys-tupleappstate-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        require_identity(s) → tuple[AppState, Identity]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoints
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-apiidentityunlock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/identity/unlock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apiidentitycreate-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/identity/create (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apiidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-apiidentityalias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /api/identity/alias
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-apiidentitydefault_ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /api/identity/default_ttl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apiidentitycard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/identity/card
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apiidentity-204-panic-button" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/identity (204) — Panic Button
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contacts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contacts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apicontacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apicontacts-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/contacts (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-apicontactspublic_keyalias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /api/contacts/{public_key}/alias
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apicontactspublic_key-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/contacts/{public_key} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Messages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Messages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#delete-apimessagesmessage_id-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/messages/{message_id} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apimessagespublic_keyread-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/messages/{public_key}/read (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apimessagespublic_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/messages/{public_key}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apimessages-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/messages (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groups
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Groups">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apigroups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroups-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apigroupsid-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/groups/{id} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apigroupsidmembers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/groups/{id}/members
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apigroupsidmembersmember_key-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/groups/{id}/members/{member_key} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroupsidinvite-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups/{id}/invite (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroupsidread-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups/{id}/read (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apigroupsidposts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/groups/{id}/posts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroupsidposts-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups/{id}/posts (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-and-tor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status and Tor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Status and Tor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apistatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apitorretry-202" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/tor/retry (202)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse-event-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE event stream
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SSE event stream">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apievents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_start_tor_backgroundstate-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _start_tor_background(state) → None
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#make_message_handlerstate-messagehandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        make_message_handler(state) → MessageHandler
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run_appstate-port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_app(state, port) → None
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helper functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_decrypt_messagerow-identity-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _decrypt_message(row, identity) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_decrypt_postrow-group_key-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _decrypt_post(row, group_key) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_group_safegroup-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _group_safe(group) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ttl-resolution-constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TTL resolution constants
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-gui
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-gui
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gui/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    legion-relay
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    legion-relay
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../relay/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#appstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AppState
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AppState">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#push_eventevent_type-data-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        push_event(event_type, data) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#push_network_loglevel-category-text-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        push_network_log(level, category, text) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on_message_deliveredmessage_id-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        on_message_delivered(message_id) → None
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create_appstate-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_app(state) → FastAPI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="create_app(state) → FastAPI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependency-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dependency functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get_state-appstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_state() → AppState
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_identitys-tupleappstate-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        require_identity(s) → tuple[AppState, Identity]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoints
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#post-apiidentityunlock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/identity/unlock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apiidentitycreate-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/identity/create (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apiidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-apiidentityalias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /api/identity/alias
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-apiidentitydefault_ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /api/identity/default_ttl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apiidentitycard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/identity/card
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apiidentity-204-panic-button" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/identity (204) — Panic Button
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contacts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contacts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apicontacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apicontacts-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/contacts (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#patch-apicontactspublic_keyalias" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PATCH /api/contacts/{public_key}/alias
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apicontactspublic_key-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/contacts/{public_key} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Messages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Messages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#delete-apimessagesmessage_id-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/messages/{message_id} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apimessagespublic_keyread-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/messages/{public_key}/read (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apimessagespublic_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/messages/{public_key}
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apimessages-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/messages (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Groups
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Groups">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apigroups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroups-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apigroupsid-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/groups/{id} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apigroupsidmembers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/groups/{id}/members
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-apigroupsidmembersmember_key-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DELETE /api/groups/{id}/members/{member_key} (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroupsidinvite-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups/{id}/invite (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroupsidread-204" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups/{id}/read (204)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-apigroupsidposts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/groups/{id}/posts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apigroupsidposts-201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/groups/{id}/posts (201)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-and-tor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status and Tor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Status and Tor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apistatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-apitorretry-202" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        POST /api/tor/retry (202)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sse-event-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSE event stream
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SSE event stream">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-apievents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_start_tor_backgroundstate-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _start_tor_background(state) → None
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#make_message_handlerstate-messagehandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        make_message_handler(state) → MessageHandler
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run_appstate-port-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run_app(state, port) → None
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helper-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helper functions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helper functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_decrypt_messagerow-identity-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _decrypt_message(row, identity) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_decrypt_postrow-group_key-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _decrypt_post(row, group_key) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_group_safegroup-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _group_safe(group) → dict
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ttl-resolution-constants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TTL resolution constants
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="api-server">API server<a class="headerlink" href="#api-server" title="Permanent link">&para;</a></h1>
+<p><code>api/server.py</code> contains the FastAPI application, all REST endpoints, the SSE event
+stream, the incoming message handler, and the <code>AppState</code> shared runtime object.</p>
+<hr />
+<h2 id="appstate">AppState<a class="headerlink" href="#appstate" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">AppState</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">db</span><span class="p">:</span> <span class="n">Database</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">delivery_queue</span><span class="p">:</span> <span class="n">DeliveryQueue</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">identity</span><span class="p">:</span> <span class="n">Identity</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">tor_onion</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">tor_manager</span><span class="p">:</span> <span class="nb">object</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">node_port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8765</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">_tor_starting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">tor_error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">_event_queues</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">_log_ring</span><span class="p">:</span> <span class="n">deque</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">deque</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="mi">200</span><span class="p">))</span>
+</code></pre></div>
+<p>One instance is created in <code>main.py</code> and passed to the FastAPI app. Every request
+handler receives it via <code>Depends(get_state)</code>.</p>
+<h4 id="push_eventevent_type-data-none"><code>push_event(event_type, data) → None</code><a class="headerlink" href="#push_eventevent_type-data-none" title="Permanent link">&para;</a></h4>
+<p>Pushes a dict into every active SSE subscriber's queue (<code>maxsize=100</code> per subscriber).
+<code>QueueFull</code> is silently ignored — the GUI will refresh on the next user action.</p>
+<h4 id="push_network_loglevel-category-text-none"><code>push_network_log(level, category, text) → None</code><a class="headerlink" href="#push_network_loglevel-category-text-none" title="Permanent link">&para;</a></h4>
+<p>Appends a <code>network_log</code> entry to <code>_log_ring</code> (for SSE backfill on reconnect)
+and calls <code>push_event()</code>. Bandwidth events (<code>level="bw"</code>) are streamed but not persisted
+in the ring — too frequent to be useful in history.</p>
+<h4 id="on_message_deliveredmessage_id-none"><code>on_message_delivered(message_id) → None</code><a class="headerlink" href="#on_message_deliveredmessage_id-none" title="Permanent link">&para;</a></h4>
+<p>Async callback passed to <code>DeliveryQueue</code>. Pushes <code>delivery_status</code> SSE event and
+a delivery log entry.</p>
+<hr />
+<h2 id="create_appstate-fastapi"><code>create_app(state) → FastAPI</code><a class="headerlink" href="#create_appstate-fastapi" title="Permanent link">&para;</a></h2>
+<p>Factory function. Creates and configures the FastAPI application:</p>
+<ul>
+<li><code>docs_url=None, redoc_url=None</code> — API documentation endpoints disabled</li>
+<li>Adds <code>CORSMiddleware</code> with <code>allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?"</code>
+  — allows only localhost origins (pywebview's embedded HTTP server)</li>
+</ul>
+<h3 id="dependency-functions">Dependency functions<a class="headerlink" href="#dependency-functions" title="Permanent link">&para;</a></h3>
+<h4 id="get_state-appstate"><code>get_state() → AppState</code><a class="headerlink" href="#get_state-appstate" title="Permanent link">&para;</a></h4>
+<p>Returns <code>app.state.app_state</code>. Injected into every endpoint.</p>
+<h4 id="require_identitys-tupleappstate-identity"><code>require_identity(s) → tuple[AppState, Identity]</code><a class="headerlink" href="#require_identitys-tupleappstate-identity" title="Permanent link">&para;</a></h4>
+<p>Returns <code>(state, state.identity)</code> or raises HTTP 503 if identity is not loaded.
+Used by all endpoints that require an unlocked identity.</p>
+<hr />
+<h2 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">&para;</a></h2>
+<h3 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">&para;</a></h3>
+<h4 id="post-apiidentityunlock"><code>POST /api/identity/unlock</code><a class="headerlink" href="#post-apiidentityunlock" title="Permanent link">&para;</a></h4>
+<p>Unlocks an existing identity with a password:</p>
+<ol>
+<li>Returns current identity if already unlocked (idempotent)</li>
+<li>Loads identity row from DB</li>
+<li>Calls <code>decrypt_private_key(row["private_key"], password)</code></li>
+<li>Raises HTTP 401 on wrong password</li>
+<li>Sets <code>state.identity</code></li>
+<li>Launches <code>_start_tor_background(state)</code> as an asyncio task</li>
+<li>Returns <code>{public_key, onion_address, alias, default_ttl}</code></li>
+</ol>
+<h4 id="post-apiidentitycreate-201"><code>POST /api/identity/create</code> (201)<a class="headerlink" href="#post-apiidentitycreate-201" title="Permanent link">&para;</a></h4>
+<p>Creates a new identity:</p>
+<ol>
+<li>Raises HTTP 409 if identity already exists</li>
+<li>Calls <code>generate_identity(alias)</code></li>
+<li>Encrypts private key with <code>encrypt_private_key(private_key, password)</code></li>
+<li>Saves to DB</li>
+<li>Sets <code>state.identity</code>, launches Tor background task</li>
+<li>Returns <code>{public_key, onion_address, alias, default_ttl}</code></li>
+</ol>
+<h4 id="get-apiidentity"><code>GET /api/identity</code><a class="headerlink" href="#get-apiidentity" title="Permanent link">&para;</a></h4>
+<p>Returns identity info including <code>default_ttl</code>.</p>
+<h4 id="patch-apiidentityalias"><code>PATCH /api/identity/alias</code><a class="headerlink" href="#patch-apiidentityalias" title="Permanent link">&para;</a></h4>
+<p>Updates alias in DB and replaces the in-memory <code>Identity</code> instance (frozen dataclass).</p>
+<h4 id="patch-apiidentitydefault_ttl"><code>PATCH /api/identity/default_ttl</code><a class="headerlink" href="#patch-apiidentitydefault_ttl" title="Permanent link">&para;</a></h4>
+<p>Updates <code>default_ttl</code>. Clamps to <code>[3600, 2592000]</code> (1 hour – 30 days).</p>
+<h4 id="get-apiidentitycard"><code>GET /api/identity/card</code><a class="headerlink" href="#get-apiidentitycard" title="Permanent link">&para;</a></h4>
+<p>Returns a signed contact card via <code>protocol.build_contact_card()</code>.</p>
+<h4 id="delete-apiidentity-204-panic-button"><code>DELETE /api/identity</code> (204) — Panic Button<a class="headerlink" href="#delete-apiidentity-204-panic-button" title="Permanent link">&para;</a></h4>
+<ol>
+<li><code>db.panic_wipe()</code> — deletes all rows from all tables, then runs <code>VACUUM</code></li>
+<li>Sets <code>state.identity = None</code></li>
+</ol>
+<p>No authentication required — by design, so it can be triggered in an emergency
+even if the identity flow is in an unusual state.</p>
+<hr />
+<h3 id="contacts">Contacts<a class="headerlink" href="#contacts" title="Permanent link">&para;</a></h3>
+<h4 id="get-apicontacts"><code>GET /api/contacts</code><a class="headerlink" href="#get-apicontacts" title="Permanent link">&para;</a></h4>
+<p>Returns all contacts. If identity is loaded, enriches each with <code>unread_count</code>
+(count of unread incoming messages).</p>
+<h4 id="post-apicontacts-201"><code>POST /api/contacts</code> (201)<a class="headerlink" href="#post-apicontacts-201" title="Permanent link">&para;</a></h4>
+<p>Adds a contact from a contact card JSON:</p>
+<ol>
+<li>Calls <code>validate_contact_card(card)</code> — verifies Ed25519 signature</li>
+<li>Raises HTTP 422 on invalid card</li>
+<li>Saves contact with <code>alias = card.alias_hint</code> and <code>trusted_since = now</code></li>
+</ol>
+<h4 id="patch-apicontactspublic_keyalias"><code>PATCH /api/contacts/{public_key}/alias</code><a class="headerlink" href="#patch-apicontactspublic_keyalias" title="Permanent link">&para;</a></h4>
+<p>Updates the local alias for a contact.</p>
+<h4 id="delete-apicontactspublic_key-204"><code>DELETE /api/contacts/{public_key}</code> (204)<a class="headerlink" href="#delete-apicontactspublic_key-204" title="Permanent link">&para;</a></h4>
+<p>Deletes contact and all message history with that contact.</p>
+<hr />
+<h3 id="messages">Messages<a class="headerlink" href="#messages" title="Permanent link">&para;</a></h3>
+<h4 id="delete-apimessagesmessage_id-204"><code>DELETE /api/messages/{message_id}</code> (204)<a class="headerlink" href="#delete-apimessagesmessage_id-204" title="Permanent link">&para;</a></h4>
+<p>Cancels delivery retries for a queued message:</p>
+<ol>
+<li><code>db.cancel_queued(message_id)</code> — removes from delivery queue</li>
+<li><code>db.update_message_status(message_id, "failed")</code></li>
+</ol>
+<h4 id="post-apimessagespublic_keyread-204"><code>POST /api/messages/{public_key}/read</code> (204)<a class="headerlink" href="#post-apimessagespublic_keyread-204" title="Permanent link">&para;</a></h4>
+<p>Marks all incoming messages from <code>public_key</code> as read (<code>read_at = now</code>).</p>
+<h4 id="get-apimessagespublic_key"><code>GET /api/messages/{public_key}</code><a class="headerlink" href="#get-apimessagespublic_key" title="Permanent link">&para;</a></h4>
+<p>Returns all messages in a conversation, decrypted on-the-fly by <code>_decrypt_message()</code>.
+Each message includes <code>text</code> (plaintext or null) and <code>file_data</code> (base64 or null).</p>
+<h4 id="post-apimessages-201"><code>POST /api/messages</code> (201)<a class="headerlink" href="#post-apimessages-201" title="Permanent link">&para;</a></h4>
+<p>Sends a message:</p>
+<ol>
+<li>Resolves TTL: <code>req.ttl</code> → <code>identity.default_ttl</code> → <code>DEFAULT_TTL</code> (7 days)</li>
+<li>If <code>file_data</code>: decodes base64, calls <code>private.send_file()</code> (includes sanitization)</li>
+<li>Otherwise: calls <code>private.send()</code></li>
+<li>Calls <code>choose_destination()</code> to decide direct vs relay routing</li>
+<li>Enqueues in delivery queue</li>
+</ol>
+<hr />
+<h3 id="groups">Groups<a class="headerlink" href="#groups" title="Permanent link">&para;</a></h3>
+<h4 id="get-apigroups"><code>GET /api/groups</code><a class="headerlink" href="#get-apigroups" title="Permanent link">&para;</a></h4>
+<p>Returns all groups with <code>unread_count</code> (posts since <code>last_read_at</code>, excluding own posts).</p>
+<h4 id="post-apigroups-201"><code>POST /api/groups</code> (201)<a class="headerlink" href="#post-apigroups-201" title="Permanent link">&para;</a></h4>
+<p>Creates a group via <code>groups.create_group()</code>.</p>
+<h4 id="delete-apigroupsid-204"><code>DELETE /api/groups/{id}</code> (204)<a class="headerlink" href="#delete-apigroupsid-204" title="Permanent link">&para;</a></h4>
+<p>Leaves or dissolves the group:</p>
+<ol>
+<li>Calls <code>groups.leave_group()</code> to build leave notifications</li>
+<li>Enqueues all notifications in delivery queue</li>
+<li>Calls <code>db.delete_group()</code> to remove locally</li>
+</ol>
+<h4 id="get-apigroupsidmembers"><code>GET /api/groups/{id}/members</code><a class="headerlink" href="#get-apigroupsidmembers" title="Permanent link">&para;</a></h4>
+<p>Returns member list enriched with <code>alias</code> (priority: <code>contacts.alias</code> → <code>group_members.alias_hint</code>)
+and <code>is_admin</code> flag.</p>
+<h4 id="delete-apigroupsidmembersmember_key-204"><code>DELETE /api/groups/{id}/members/{member_key}</code> (204)<a class="headerlink" href="#delete-apigroupsidmembersmember_key-204" title="Permanent link">&para;</a></h4>
+<p>Admin removes a member:</p>
+<ol>
+<li>Calls <code>groups.remove_member()</code> — generates new key, builds broadcasts</li>
+<li>Enqueues all broadcasts</li>
+</ol>
+<h4 id="post-apigroupsidinvite-201"><code>POST /api/groups/{id}/invite</code> (201)<a class="headerlink" href="#post-apigroupsidinvite-201" title="Permanent link">&para;</a></h4>
+<p>Invites a member:</p>
+<ol>
+<li>Calls <code>groups.invite_member()</code> — builds invite + update broadcasts</li>
+<li>Enqueues invite to the new member</li>
+<li>Enqueues <code>group_member_update(op=add)</code> to all existing members</li>
+</ol>
+<h4 id="post-apigroupsidread-204"><code>POST /api/groups/{id}/read</code> (204)<a class="headerlink" href="#post-apigroupsidread-204" title="Permanent link">&para;</a></h4>
+<p>Sets <code>last_read_at = now</code> for the group.</p>
+<h4 id="get-apigroupsidposts"><code>GET /api/groups/{id}/posts</code><a class="headerlink" href="#get-apigroupsidposts" title="Permanent link">&para;</a></h4>
+<p>Returns all posts decrypted on-the-fly. Enriches each with <code>author_alias</code>
+(priority: <code>contacts.alias</code> → <code>group_members.alias_hint</code>).</p>
+<h4 id="post-apigroupsidposts-201"><code>POST /api/groups/{id}/posts</code> (201)<a class="headerlink" href="#post-apigroupsidposts-201" title="Permanent link">&para;</a></h4>
+<p>Posts to a group:</p>
+<ol>
+<li>Calls <code>groups.post()</code> — SecretBox encrypts, signs, saves locally</li>
+<li>Delivers to every member using <code>group_members.onion_address</code> (peer-to-peer routing)</li>
+</ol>
+<hr />
+<h3 id="status-and-tor">Status and Tor<a class="headerlink" href="#status-and-tor" title="Permanent link">&para;</a></h3>
+<h4 id="get-apistatus"><code>GET /api/status</code><a class="headerlink" href="#get-apistatus" title="Permanent link">&para;</a></h4>
+<p>Returns node state:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;identity_loaded&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;identity_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;onion_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;xxx.onion&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;tor_running&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;tor_starting&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">&quot;tor_error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">&quot;relay_configured&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="p">}</span>
+</code></pre></div></p>
+<h4 id="post-apitorretry-202"><code>POST /api/tor/retry</code> (202)<a class="headerlink" href="#post-apitorretry-202" title="Permanent link">&para;</a></h4>
+<p>Retries Tor startup if it previously failed.</p>
+<hr />
+<h3 id="sse-event-stream">SSE event stream<a class="headerlink" href="#sse-event-stream" title="Permanent link">&para;</a></h3>
+<h4 id="get-apievents"><code>GET /api/events</code><a class="headerlink" href="#get-apievents" title="Permanent link">&para;</a></h4>
+<p>Server-Sent Events stream. On connection:</p>
+<ol>
+<li><strong>Backfill:</strong> sends all entries from <code>_log_ring</code> (up to 200 past <code>network_log</code> events)</li>
+<li><strong>Live:</strong> streams events as they arrive</li>
+</ol>
+<p>Each event is <code>data: {json}\n\n</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Event type</th>
+<th>Fields</th>
+<th>Trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>message</code></td>
+<td><code>from, id</code></td>
+<td>Incoming private message received</td>
+</tr>
+<tr>
+<td><code>group_post</code></td>
+<td><code>group_id, from, id</code></td>
+<td>Incoming group post received</td>
+</tr>
+<tr>
+<td><code>group_invite</code></td>
+<td><code>group_id</code></td>
+<td>Group invite accepted</td>
+</tr>
+<tr>
+<td><code>group_member_update</code></td>
+<td><code>from, op, group_id, public_key, alias_hint, group_name, voluntary?, dissolved?</code></td>
+<td>Roster change</td>
+</tr>
+<tr>
+<td><code>group_key_update</code></td>
+<td><code>from, group_id</code></td>
+<td>Group key rotated</td>
+</tr>
+<tr>
+<td><code>delivery_status</code></td>
+<td><code>id, status</code></td>
+<td>Message delivered</td>
+</tr>
+<tr>
+<td><code>tor_ready</code></td>
+<td><code>onion_address</code></td>
+<td>Hidden Service published</td>
+</tr>
+<tr>
+<td><code>tor_status</code></td>
+<td><code>status, error?</code></td>
+<td>Tor starting or failed</td>
+</tr>
+<tr>
+<td><code>network_log</code></td>
+<td><code>level, category, text, ts</code></td>
+<td>Network activity log entry</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_start_tor_backgroundstate-none"><code>_start_tor_background(state) → None</code><a class="headerlink" href="#_start_tor_backgroundstate-none" title="Permanent link">&para;</a></h2>
+<p>Async function launched as <code>asyncio.create_task()</code> after identity unlock.</p>
+<ol>
+<li>Guards against double-start (<code>_tor_starting</code> flag, <code>tm.is_running</code> check)</li>
+<li>Pushes <code>tor_status(starting)</code> SSE event</li>
+<li>Pushes <code>network_log</code> entry</li>
+<li>Calls <code>await tm.start(identity.private_key, hs_port=state.node_port)</code></li>
+<li>On success: updates <code>state.tor_onion</code>, pushes <code>tor_ready</code> event, attaches Stem event listener</li>
+<li>On failure: stores error in <code>state.tor_error</code>, pushes <code>tor_status(error)</code></li>
+</ol>
+<p>The Stem listener callback wraps <code>state.push_network_log</code> with <code>loop.call_soon_threadsafe()</code>
+to safely cross the thread boundary from Stem's event thread.</p>
+<hr />
+<h2 id="make_message_handlerstate-messagehandler"><code>make_message_handler(state) → MessageHandler</code><a class="headerlink" href="#make_message_handlerstate-messagehandler" title="Permanent link">&para;</a></h2>
+<p>Returns the async handler passed to <code>NodeServer.start()</code>. Called for every valid
+incoming WebSocket message.</p>
+<p>Dispatch by <code>msg_type</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"msg"</code></td>
+<td>Verify sender is in contacts → <code>private.receive()</code> → push <code>message</code> SSE</td>
+</tr>
+<tr>
+<td><code>"group_invite"</code></td>
+<td>Verify sender is in contacts → <code>groups.accept_invite()</code> → push <code>group_invite</code> SSE</td>
+</tr>
+<tr>
+<td><code>"group_post"</code></td>
+<td>Verify sender is a group member → <code>groups.receive_post()</code> → push <code>group_post</code> SSE</td>
+</tr>
+<tr>
+<td><code>"group_member_update"</code></td>
+<td><code>groups.handle_member_update()</code> → push SSE; if admin receives voluntary leave → auto-rotate key via <code>groups.remove_member()</code></td>
+</tr>
+<tr>
+<td><code>"group_key_update"</code></td>
+<td><code>groups.handle_key_update()</code> → push <code>group_key_update</code> SSE</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Unknown type or failed authorization:</strong> silent drop, no response.
+<code>state.identity is None</code> check at entry — drops all messages if the identity is not loaded.</p>
+<hr />
+<h2 id="run_appstate-port-none"><code>run_app(state, port) → None</code><a class="headerlink" href="#run_appstate-port-none" title="Permanent link">&para;</a></h2>
+<p>Starts uvicorn bound to <code>127.0.0.1</code> only:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">uvicorn</span><span class="o">.</span><span class="n">Config</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;warning&quot;</span><span class="p">)</span>
+</code></pre></div>
+Never binds to <code>0.0.0.0</code>. Uvicorn access logs are suppressed.</p>
+<hr />
+<h2 id="helper-functions">Helper functions<a class="headerlink" href="#helper-functions" title="Permanent link">&para;</a></h2>
+<h4 id="_decrypt_messagerow-identity-dict"><code>_decrypt_message(row, identity) → dict</code><a class="headerlink" href="#_decrypt_messagerow-identity-dict" title="Permanent link">&para;</a></h4>
+<p>Decrypts a message row for API response:</p>
+<ol>
+<li>Determines peer key: if <code>from_key == our_key</code> then peer is <code>to_key</code>, and vice versa</li>
+<li>Calls <code>crypto.decrypt(our_private, peer_public, payload)</code></li>
+<li>Parses the JSON envelope</li>
+<li>Returns dict with <code>text</code> (str or null) and <code>file_data</code> (base64 str or null)</li>
+<li>Removes raw <code>payload</code> and <code>signature</code> from the response</li>
+</ol>
+<h4 id="_decrypt_postrow-group_key-dict"><code>_decrypt_post(row, group_key) → dict</code><a class="headerlink" href="#_decrypt_postrow-group_key-dict" title="Permanent link">&para;</a></h4>
+<p>Decrypts a group post row. Returns <code>text</code> field (or null on failure).</p>
+<h4 id="_group_safegroup-dict"><code>_group_safe(group) → dict</code><a class="headerlink" href="#_group_safegroup-dict" title="Permanent link">&para;</a></h4>
+<p>Removes <code>group_key</code> from the group dict before returning to the GUI.
+The raw 32-byte symmetric key is never sent to the frontend.</p>
+<h4 id="ttl-resolution-constants">TTL resolution constants<a class="headerlink" href="#ttl-resolution-constants" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">_TTL_MIN</span> <span class="o">=</span> <span class="mi">3_600</span>      <span class="c1"># 1 hour</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">_TTL_MAX</span> <span class="o">=</span> <span class="mi">2_592_000</span>  <span class="c1"># 30 days</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
