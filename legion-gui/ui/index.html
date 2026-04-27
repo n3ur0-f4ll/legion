@@ -81,7 +81,6 @@
             <div class="sidebar-tabs">
                 <button class="tab-btn active" id="tab-contacts" onclick="switchTab('contacts')">Contacts</button>
                 <button class="tab-btn" id="tab-groups" onclick="switchTab('groups')">Groups</button>
-                <button class="tab-btn" id="tab-network" onclick="switchTab('network')">Network</button>
             </div>
 
             <!-- Contacts list -->
@@ -96,14 +95,6 @@
                 <div id="groups-list"></div>
             </div>
 
-            <!-- Network panel (sidebar) -->
-            <div id="network-panel" class="sidebar-list hidden">
-                <div class="bw-display" id="bw-display">
-                    <span class="bw-up">↑ –</span>
-                    <span class="bw-dn">↓ –</span>
-                </div>
-                <div class="bw-hint">Tor bandwidth (live)</div>
-            </div>
 
             <div id="sidebar-bottom">
                 <span id="version-label" class="version-label"></span>
@@ -174,6 +165,10 @@
             <div id="panel-network" class="panel hidden">
                 <div class="panel-header">
                     <span class="panel-title">Network Log</span>
+                    <div class="bw-display" id="bw-display">
+                        <span class="bw-up">↑ –</span>
+                        <span class="bw-dn">↓ –</span>
+                    </div>
                     <div class="net-filter-bar">
                         <button class="net-filter-btn active" id="nf-all" onclick="setNetFilter('all')">All</button>
                         <button class="net-filter-btn" id="nf-tor" onclick="setNetFilter('tor')">Tor</button>
@@ -192,6 +187,14 @@
                         <img src="img/logo.png" class="opsec-logo" alt="Legion">
                         <div class="opsec-title">LEGION</div>
                         <div class="opsec-subtitle">Operational Security Guide</div>
+                    </div>
+
+                    <div class="opsec-section opsec-info">
+                        <div class="opsec-section-title">◈ How Legion works</div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span><span><strong>Tor network.</strong> Your messages travel through Tor — a global network of thousands of independently operated relay nodes. Each connection passes through at least three of them. No one on the path sees both who you are and who you are communicating with. Your internet provider, your government, and we cannot see your IP address or who your contacts are.</span></div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span><span><strong>End-to-end encryption.</strong> Every message is encrypted on your device using your contact's public key before it leaves. Only their device can decrypt it. The algorithm is XSalsa20-Poly1305 via libsodium — a widely audited cryptographic library. Plaintext is never written to disk; decryption happens in memory only, when you read.</span></div>
+                        <div class="opsec-item"><span class="opsec-badge info">→</span><span><strong>No servers, no accounts.</strong> Legion requires no phone number, no email and no registration. You run your own node on your own device. There is no company storing your messages, no central server that can be seized, blocked or hacked, and no account that can be suspended.</span></div>
+                        <div class="opsec-item"><span class="opsec-badge warn">⚠</span><span><strong>Your password cannot be recovered.</strong> Your private key is encrypted with your password using Argon2id. If you forget it, your identity is permanently inaccessible — there is no reset and no recovery mechanism. Write your password down and keep it somewhere secure.</span></div>
                     </div>
 
                     <div class="opsec-section opsec-protected">

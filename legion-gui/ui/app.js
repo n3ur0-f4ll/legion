@@ -133,17 +133,10 @@ function switchTab(tab) {
     document.getElementById(`tab-${tab}`).classList.add("active");
     document.getElementById("contacts-panel").classList.toggle("hidden", tab !== "contacts");
     document.getElementById("groups-panel").classList.toggle("hidden", tab !== "groups");
-    document.getElementById("network-panel").classList.toggle("hidden", tab !== "network");
 
-    if (tab === "network") {
-        showPanel("network");
-        renderNetLog();
-    } else {
-        // Restore the relevant main panel when leaving Network tab
-        if (currentContact) showPanel("messages");
-        else if (currentGroup) showPanel("group");
-        else showPanel("welcome");
-    }
+    if (currentContact) showPanel("messages");
+    else if (currentGroup) showPanel("group");
+    else showPanel("welcome");
 }
 
 // ================================================================
@@ -238,7 +231,7 @@ async function updateStatus() {
         if (status.tor_running) {
             torEl.textContent = "Tor ✓";
             torEl.className = "status-indicator status-ok";
-            torEl.title = status.onion_address;
+            torEl.title = status.onion_address + "\n\nClick to open Network log";
         } else if (status.tor_starting) {
             torEl.textContent = "Tor …";
             torEl.className = "status-indicator status-unknown";
@@ -257,7 +250,12 @@ async function updateStatus() {
 
 async function retryTor() {
     const torEl = document.getElementById("status-tor");
-    if (torEl.className.includes("status-ok") || torEl.className.includes("status-unknown")) return;
+    if (torEl.className.includes("status-ok")) {
+        renderNetLog();
+        showPanel("network");
+        return;
+    }
+    if (torEl.className.includes("status-unknown")) return;
     try {
         await api("POST", "/api/tor/retry");
         torEl.textContent = "Tor …";

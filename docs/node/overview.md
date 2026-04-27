@@ -42,11 +42,11 @@ legion-node/
 main.py / config.py
       │  orchestration, CLI args, graceful shutdown
       ▼
-api/server.py  ←──── SSE events ────────────────┐
+api/server.py  ◄──── SSE events ────────────────┐
       │  AppState, REST endpoints               │
       ▼                                         │
 messaging/           network/                   │
-  private.py    ←──  node.py (incoming)         │
+  private.py    ◄──  node.py (incoming)         │
   groups.py     ───► client.py (outgoing)       │
   files.py           tor.py (Tor process)       │
   delivery.py   ───► relay.py (routing)         │

@@ -10,13 +10,51 @@ Every message travels end-to-end encrypted through the Tor network.
 
 ---
 
+## Who it's for
+
+Legion is built for people who need communication that cannot be intercepted,
+blocked, or handed over to a third party — because there is no third party.
+
+- **Journalists and sources** — exchange information without leaving a trail that can be
+  subpoenaed, seized, or leaked through a company's servers
+- **Lawyers and clients** — attorney-client privilege enforced at the cryptographic level,
+  not just by contract
+- **Activists and human rights workers** — no central server to block, no company to
+  pressure, no account to suspend
+- **Security researchers** — fully auditable, open source, no black boxes
+- **Anyone in a high-risk environment** — people whose location, identity, or
+  communications must remain private regardless of who is watching the network
+
+If your threat model is "a company might get hacked or receive a legal order,"
+Legion eliminates that threat at the architectural level.
+
+---
+
+## What makes Legion different
+
+Most messaging applications protect the **content** of your messages. Legion protects
+the content, the metadata, and the infrastructure itself.
+
+| Property | How Legion achieves it |
+|---|---|
+| **No central server** | Every user runs their own node. There is no server to shut down, block, subpoena, or hack. |
+| **No accounts** | No phone number, no email address, no registration of any kind. Your identity is a cryptographic key generated on your device. |
+| **Network-level anonymity** | All traffic routes through the Tor network. Your IP address is never visible to your contacts, relay operators, or network observers. |
+| **Metadata-free storage** | Plaintext is never written to disk. The local database stores only encrypted ciphertext — unreadable without your password. |
+| **Image metadata stripped** | Photos are re-encoded from scratch before sending. GPS coordinates, camera model, timestamps and all EXIF data are permanently removed. |
+| **Emergency destruction** | The panic button immediately and irreversibly destroys all local data including a database-level overwrite — no forensic recovery. |
+| **Key rotation** | When a group member is removed, the group encryption key is automatically rotated and redistributed. Removed members cannot read future messages. |
+| **Fully open source** | AGPL-3.0. Every line of code is auditable. No closed components, no telemetry, no update servers. |
+
+---
+
 ## Features
 
 - **End-to-end encryption** — X25519 + XSalsa20-Poly1305 (libsodium) for all messages and files
 - **Tor Hidden Service** — every node operates as a `.onion` address; your real IP is never exposed
 - **No central infrastructure** — peer-to-peer delivery, no company, no cloud
 - **Private key encrypted at rest** — Argon2id password hashing, password required at every launch
-- **Group chats** — shared symmetric key, peer-to-peer delivery, key rotation on member removal
+- **Group chats** — shared symmetric key, peer-to-peer delivery, automatic key rotation on member removal
 - **File transfer** — images re-encoded by Pillow before sending (GPS, EXIF and all metadata stripped)
 - **Persistent delivery queue** — messages retry every 10 seconds until delivered, survive app restarts
 - **Panic button** — immediately and irreversibly destroys all local data (identity, messages, contacts, groups)
