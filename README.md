@@ -56,7 +56,7 @@ the content, the metadata, and the infrastructure itself.
 - **Private key encrypted at rest** — Argon2id password hashing, password required at every launch
 - **Group chats** — shared symmetric key, peer-to-peer delivery, automatic key rotation on member removal
 - **File transfer** — images re-encoded by Pillow before sending (GPS, EXIF and all metadata stripped)
-- **Persistent delivery queue** — messages retry every 10 seconds until delivered, survive app restarts
+- **Persistent delivery queue** — messages retry every 10 seconds while Legion is running; state is saved so retries resume after reopening the app
 - **QR contact card** — generate a QR code of your contact card for easy sharing; others scan it with any phone camera
 - **Panic button** — immediately and irreversibly destroys all local data (identity, messages, contacts, groups)
 - **Open source** — AGPL-3.0, fully auditable
@@ -189,6 +189,52 @@ The password is required at every subsequent launch to unlock your private key.
 > The first connection to a new `.onion` address can take 60–180 seconds while Tor builds
 > the necessary circuits and publishes the Hidden Service descriptor. Subsequent connections
 > are faster.
+
+---
+
+## How message delivery works
+
+Legion has no central server. Your device connects **directly** to the recipient's device
+through the Tor network — there is no middleman holding your messages.
+
+This means two things you need to understand before you start:
+
+### Both sides need to be online at the same time
+
+When you send a message, your Legion node attempts to reach the recipient's node directly.
+
+- **Recipient is online** → message arrives within seconds (plus Tor circuit build time).
+- **Recipient is offline** → the message stays in your outbox and Legion retries
+  automatically every 10 seconds for as long as the app is running.
+
+**If you close Legion, retries stop.** The message is saved locally and will resume
+retrying the next time you open Legion. It will never be lost — but it will not be
+delivered until either you or your contact (or both) come back online.
+
+### Why does it work this way?
+
+Because there is no server between you and your contact. No company, no cloud,
+no infrastructure that can be shut down, hacked, or handed over to authorities.
+
+Think of it like this: Legion is less like WhatsApp (where messages wait on a company's
+server until you log in) and more like a direct call — you both need to be present.
+The trade-off is real but intentional: **the absence of a server is the security guarantee.**
+
+### Practical advice
+
+- Keep Legion running in the background when you are expecting an important message.
+- The unread badge updates automatically the moment your contact comes online and the
+  message arrives — you do not need to do anything.
+- The `…` status indicator on a sent message means it is still queued. A `✓` means it
+  was delivered. You can cancel a queued message at any time by clicking `×` next to it.
+
+### Relay node (coming soon)
+
+We are working on an optional **relay node** — a small always-online server you can
+self-host or share with trusted people. When configured, your messages are handed off
+to the relay immediately, and the relay delivers them 24/7 regardless of whether your
+own device is online. The relay never sees the content of your messages (they remain
+end-to-end encrypted). This feature is in active development.
 
 ---
 

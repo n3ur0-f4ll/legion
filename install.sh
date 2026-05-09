@@ -117,11 +117,14 @@ ok "Python dependencies installed"
 info "Linking system gi (PyGObject) into venv…"
 
 # gi can live in site-packages (Arch, Fedora) or dist-packages (Debian/Ubuntu)
+# On 64-bit RHEL/Fedora the path is under /usr/lib64, not /usr/lib
 GI_SRC=""
 for candidate in \
     "/usr/lib/python3/dist-packages/gi" \
     "/usr/lib/python${PYVER_FULL}/site-packages/gi" \
-    "/usr/lib/python${PYVER_MAJOR}/site-packages/gi"; do
+    "/usr/lib/python${PYVER_MAJOR}/site-packages/gi" \
+    "/usr/lib64/python${PYVER_FULL}/site-packages/gi" \
+    "/usr/lib64/python${PYVER_MAJOR}/site-packages/gi"; do
     if [ -d "$candidate" ]; then
         GI_SRC="$candidate"
         break
@@ -129,8 +132,8 @@ for candidate in \
 done
 
 if [ -z "$GI_SRC" ]; then
-    # Fallback: search common paths
-    GI_SRC=$(find /usr/lib -maxdepth 4 -type d -name "gi" 2>/dev/null | head -1)
+    # Fallback: search both /usr/lib and /usr/lib64
+    GI_SRC=$(find /usr/lib /usr/lib64 -maxdepth 4 -type d -name "gi" 2>/dev/null | head -1)
 fi
 
 if [ -z "$GI_SRC" ]; then

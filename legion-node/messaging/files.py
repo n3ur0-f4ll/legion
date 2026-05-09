@@ -41,7 +41,7 @@ MAX_FILE_SIZE: Final = 5 * 1024 * 1024  # 5 MB
 _IMAGE_SIGNATURES: Final[dict[str, bytes]] = {
     "image/jpeg": b"\xff\xd8\xff",
     "image/png":  b"\x89PNG\r\n\x1a\n",
-    "image/webp": b"RIFF",
+    "image/webp": b"RIFF",    # RIFF container; full check is RIFF????WEBP (see _sanitize_image)
 }
 
 _PILLOW_FORMAT: Final[dict[str, str]] = {
@@ -87,6 +87,9 @@ def sanitize_incoming(data: bytes, mime_type: str) -> bytes:
     """
     _validate_size(data)
 
+    if mime_type in _BLOCKED_MIME_TYPES:
+        raise FileError(f"File type not allowed: {mime_type!r}")
+
     if mime_type in _IMAGE_SIGNATURES:
         return _sanitize_image(data, mime_type)
 
@@ -116,9 +119,13 @@ def is_image(mime_type: str) -> bool:
 def _sanitize_image(data: bytes, mime_type: str) -> bytes:
     """Re-encode image through Pillow — strips ALL metadata."""
     sig = _IMAGE_SIGNATURES[mime_type]
-    # For WebP: magic is RIFF????WEBP — check first 4 bytes
-    check = data[:4] if mime_type == "image/webp" else data[:len(sig)]
-    if check != (sig[:4] if mime_type == "image/webp" else sig):
+    if mime_type == "image/webp":
+        # WebP: RIFF container — RIFF(4) + size(4) + "WEBP"(4)
+        if not (data[:4] == b"RIFF" and len(data) >= 12 and data[8:12] == b"WEBP"):
+            raise FileError(
+                f"File magic bytes don't match declared MIME type {mime_type!r}"
+            )
+    elif data[:len(sig)] != sig:
         raise FileError(
             f"File magic bytes don't match declared MIME type {mime_type!r}"
         )

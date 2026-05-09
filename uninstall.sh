@@ -90,9 +90,9 @@ echo
 warn "System packages (python-gobject, webkit2gtk, tor, wl-clipboard) were NOT removed."
 warn "They may be used by other applications. Remove them manually if needed:"
 echo
-echo "  Arch:    sudo pacman -Rs python-gobject webkit2gtk-4.1 wl-clipboard"
-echo "  Debian:  sudo apt remove python3-gi gir1.2-webkit2-4.1 wl-clipboard"
-echo "  Fedora:  sudo dnf remove python3-gobject webkit2gtk4.1 wl-clipboard"
+echo "  Arch:    sudo pacman -Rs python-gobject webkit2gtk-4.1 wl-clipboard tor"
+echo "  Debian:  sudo apt remove python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.1 wl-clipboard tor"
+echo "  Fedora:  sudo dnf remove python3-gobject webkit2gtk4.1 wl-clipboard tor"
 echo
 
 # ── note about repository ─────────────────────────────────────────────────────

@@ -44,7 +44,7 @@ _LOOP_INTERVAL = 10  # seconds between queue sweeps — also the retry interval
 
 
 class DeliveryQueue:
-    """Background delivery queue with exponential-ish retry schedule.
+    """Background delivery queue with flat-interval retry (10 seconds, unlimited attempts).
 
     Reads full message JSON from delivery_queue.message_json and hands it to
     the sender callable (network.client.send_message or relay equivalent).

@@ -26,12 +26,15 @@ Klasy row_factory zwracają słowniki — storage nie zna klas domenowych.
 
 from __future__ import annotations
 
+import logging
 import pathlib
 import sqlite3
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 import aiosqlite
+
+logger = logging.getLogger(__name__)
 
 _SCHEMA = pathlib.Path(__file__).parent.parent / "data" / "schema.sql"
 
@@ -496,5 +499,6 @@ async def _apply_schema(conn: aiosqlite.Connection) -> None:
         try:
             await conn.execute(migration)
             await conn.commit()
-        except Exception:
-            pass  # column already exists
+        except Exception as exc:
+            if "duplicate column" not in str(exc).lower():
+                logger.warning("Migration skipped unexpectedly: %s — %s", migration[:60], exc)

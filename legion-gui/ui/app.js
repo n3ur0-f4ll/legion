@@ -467,12 +467,18 @@ async function loadMessages(contact) {
                 ? `<span class="status-icon ${msg.status}" title="${msg.status}">${statusIcon[msg.status] || ''}</span>${cancelBtn}`
                 : '';
 
+            // Only these three types are rendered as images — prevents SVG/arbitrary image/* injection
+            const _SAFE_IMG = new Set(["image/jpeg", "image/png", "image/webp"]);
             let content;
+            let _fileSave = null;   // deferred: { data, name } — attached via addEventListener, never via onclick
             if (msg.file_data && msg.mime_type) {
                 const name = esc(msg.file_name || "file");
                 const size = Math.round(atob(msg.file_data).length / 1024);
-                const saveBtn = `<button class="btn-copy" style="margin-top:6px" onclick="saveAttachment('${msg.file_data}','${msg.file_name||'file'}')">↓ Save</button>`;
-                if (msg.mime_type.startsWith("image/")) {
+                // Save button uses a class marker — data passed via closure, NOT inline onclick attribute
+                // (inline onclick with file_name would be XSS if name contains single quotes)
+                const saveBtn = `<button class="btn-copy btn-save-file" style="margin-top:6px">↓ Save</button>`;
+                _fileSave = { data: msg.file_data, name: msg.file_name || "file" };
+                if (_SAFE_IMG.has(msg.mime_type)) {
                     const dataUrl = `data:${msg.mime_type};base64,${msg.file_data}`;
                     content = `<img class="msg-image" src="${dataUrl}" alt="${name}">${saveBtn}`;
                 } else {
@@ -486,6 +492,10 @@ async function loadMessages(contact) {
                 <div class="message-text">${content}</div>
                 <div class="message-meta"><span>${ts}</span>${icon}</div>
             `;
+            if (_fileSave) {
+                const saveEl = bubble.querySelector(".btn-save-file");
+                if (saveEl) saveEl.addEventListener("click", () => saveAttachment(_fileSave.data, _fileSave.name));
+            }
             if (isOutgoing && msg.status === 'queued') {
                 const btn = bubble.querySelector(".btn-cancel-msg");
                 if (btn) btn.addEventListener("click", () => cancelMessage(msg.id));
@@ -826,22 +836,8 @@ async function saveDefaultTtl() {
 }
 
 async function saveRelay() {
-    const onion = document.getElementById("relay-onion").value.trim();
-    const pubkey = document.getElementById("relay-pubkey").value.trim();
-    const enabled = document.getElementById("relay-enabled").checked;
-
-    if (!onion || !pubkey) {
-        document.getElementById("relay-status").textContent = "Fill in both fields.";
-        return;
-    }
-
-    try {
-        // The API doesn't expose relay config editing yet — note for future
-        showToast("Relay config saved (requires node restart to take effect)");
-        document.getElementById("relay-status").textContent = enabled ? "Relay active" : "Relay disabled";
-    } catch (err) {
-        document.getElementById("relay-status").textContent = "Error: " + err.message;
-    }
+    // Relay configuration API is not yet implemented (roadmap item).
+    document.getElementById("relay-status").textContent = "Relay config: coming soon";
 }
 
 // ================================================================
