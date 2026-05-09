@@ -57,6 +57,7 @@ the content, the metadata, and the infrastructure itself.
 - **Group chats** — shared symmetric key, peer-to-peer delivery, automatic key rotation on member removal
 - **File transfer** — images re-encoded by Pillow before sending (GPS, EXIF and all metadata stripped)
 - **Persistent delivery queue** — messages retry every 10 seconds until delivered, survive app restarts
+- **QR contact card** — generate a QR code of your contact card for easy sharing; others scan it with any phone camera
 - **Panic button** — immediately and irreversibly destroys all local data (identity, messages, contacts, groups)
 - **Open source** — AGPL-3.0, fully auditable
 
@@ -91,36 +92,73 @@ python3 --version
 
 ## Installation
 
-### 1. Clone the repository
+### Automatic (recommended)
+
+```bash
+git clone https://github.com/n3ur0-f4ll/legion.git
+cd legion
+bash install.sh
+```
+
+The installer supports **Arch / EndeavourOS / Manjaro**, **Debian / Ubuntu / Mint**
+and **Fedora / RHEL / Rocky Linux**. It installs system packages, creates a virtual
+environment, installs Python dependencies and links the system PyGObject into the venv.
+
+### Uninstall
+
+```bash
+bash uninstall.sh
+```
+
+Removes the venv, launcher, desktop entry and icon. Optionally removes personal data
+(identity, messages, contacts). System packages are not removed automatically.
+
+### Manual installation
+
+<details>
+<summary>Expand for manual steps</summary>
+
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/n3ur0-f4ll/legion.git
 cd legion
 ```
 
-### 2. Create and activate a virtual environment
+#### 2. Install system packages
+
+```bash
+# Arch / EndeavourOS / Manjaro
+sudo pacman -S python-gobject webkit2gtk-4.1 wl-clipboard tor
+
+# Debian / Ubuntu / Mint
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-3.0 \
+    gir1.2-webkit2-4.1 wl-clipboard tor python3-venv
+
+# Fedora / RHEL / Rocky
+sudo dnf install python3-gobject webkit2gtk4.1 wl-clipboard tor
+```
+
+#### 3. Create virtual environment and install dependencies
 
 ```bash
 python3 -m venv .venv
-source .venv/bin/activate
+.venv/bin/pip install -r requirements.txt
 ```
 
-### 3. Install Python dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Link the system PyGObject (gi) into the venv
-
-`gi` (PyGObject) must be installed as a system package and linked into the venv.
-Installing it via pip is not supported.
+#### 4. Link PyGObject (gi) into the venv
 
 ```bash
 PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-ln -sf /usr/lib/python${PYVER}/site-packages/gi \
-       .venv/lib/python${PYVER}/site-packages/gi
+
+# Arch / Fedora (site-packages)
+ln -sf /usr/lib/python${PYVER}/site-packages/gi .venv/lib/python${PYVER}/site-packages/gi
+
+# Debian / Ubuntu (dist-packages)
+ln -sf /usr/lib/python3/dist-packages/gi .venv/lib/python${PYVER}/site-packages/gi
 ```
+
+</details>
 
 ---
 
@@ -144,7 +182,7 @@ The password is required at every subsequent launch to unlock your private key.
 ## First use
 
 1. **Create identity** — choose a display name and a strong password (no recovery is possible if forgotten)
-2. **Share your contact card** — go to Settings and copy your contact card JSON, send it to your contact through any channel
+2. **Share your contact card** — go to Settings → copy JSON or show a QR code; your contact scans it or pastes the JSON to add you
 3. **Add a contact** — paste their contact card JSON into "Add contact"
 4. **Start messaging** — your node connects through Tor automatically
 

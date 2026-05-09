@@ -758,6 +758,31 @@ function copyOnion() {
     copyToClipboard(onion, "Onion address copied");
 }
 
+async function showQR() {
+    if (!identity) return;
+    try {
+        const data = await api("GET", "/api/identity/qr");
+        const img = document.getElementById("qr-image");
+        img.src = "data:image/png;base64," + data.qr;
+        document.getElementById("qr-alias").textContent = identity.alias || "";
+        openModal("modal-qr");
+    } catch (err) {
+        showToast("Could not generate QR: " + err.message);
+    }
+}
+
+async function saveQR() {
+    const img = document.getElementById("qr-image");
+    if (!img.src || img.src === window.location.href) return;
+    const base64 = img.src.split(",")[1];
+    const filename = "legion-contact-" + (identity?.alias || "card") + ".png";
+    if (window.pywebview && window.pywebview.api) {
+        const path = await window.pywebview.api.save_file(base64, filename);
+        if (path) showToast("Saved to " + path);
+        else showToast("Could not save QR image");
+    }
+}
+
 async function copyContactCard() {
     if (!identity) return;
     try {

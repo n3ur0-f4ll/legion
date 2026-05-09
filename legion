@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+LEGION_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$LEGION_DIR/.venv/bin/python" "$LEGION_DIR/legion-gui/app/main.py" "$@"

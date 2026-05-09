@@ -96,6 +96,17 @@ Updates `default_ttl`. Clamps to `[3600, 2592000]` (1 hour – 30 days).
 #### `GET /api/identity/card`
 Returns a signed contact card via `protocol.build_contact_card()`.
 
+#### `GET /api/identity/qr`
+Generates a QR code of the signed contact card and returns it as a base64-encoded PNG:
+
+1. Calls `build_contact_card()` to get the signed JSON
+2. Serialises it with `json.dumps(separators=(",", ":"))` (compact, no whitespace)
+3. Encodes with `qrcode` (error correction M, box_size=6, border=4) using Pillow as backend
+4. Returns `{"qr": "<base64 PNG>"}`
+
+The resulting PNG has a white background (required for reliable scanning).
+The compact contact card JSON is typically 280–340 bytes, fitting comfortably within QR version 10.
+
 #### `DELETE /api/identity` (204) — Panic Button
 1. `db.panic_wipe()` — deletes all rows from all tables, then runs `VACUUM`
 2. Sets `state.identity = None`

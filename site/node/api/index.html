@@ -771,6 +771,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get-apiidentityqr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/identity/qr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#delete-apiidentity-204-panic-button" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1607,6 +1618,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#get-apiidentityqr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /api/identity/qr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#delete-apiidentity-204-panic-button" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2119,6 +2141,16 @@ Used by all endpoints that require an unlocked identity.</p>
 <p>Updates <code>default_ttl</code>. Clamps to <code>[3600, 2592000]</code> (1 hour – 30 days).</p>
 <h4 id="get-apiidentitycard"><code>GET /api/identity/card</code><a class="headerlink" href="#get-apiidentitycard" title="Permanent link">&para;</a></h4>
 <p>Returns a signed contact card via <code>protocol.build_contact_card()</code>.</p>
+<h4 id="get-apiidentityqr"><code>GET /api/identity/qr</code><a class="headerlink" href="#get-apiidentityqr" title="Permanent link">&para;</a></h4>
+<p>Generates a QR code of the signed contact card and returns it as a base64-encoded PNG:</p>
+<ol>
+<li>Calls <code>build_contact_card()</code> to get the signed JSON</li>
+<li>Serialises it with <code>json.dumps(separators=(",", ":"))</code> (compact, no whitespace)</li>
+<li>Encodes with <code>qrcode</code> (error correction M, box_size=6, border=4) using Pillow as backend</li>
+<li>Returns <code>{"qr": "&lt;base64 PNG&gt;"}</code></li>
+</ol>
+<p>The resulting PNG has a white background (required for reliable scanning).
+The compact contact card JSON is typically 280–340 bytes, fitting comfortably within QR version 10.</p>
 <h4 id="delete-apiidentity-204-panic-button"><code>DELETE /api/identity</code> (204) — Panic Button<a class="headerlink" href="#delete-apiidentity-204-panic-button" title="Permanent link">&para;</a></h4>
 <ol>
 <li><code>db.panic_wipe()</code> — deletes all rows from all tables, then runs <code>VACUUM</code></li>

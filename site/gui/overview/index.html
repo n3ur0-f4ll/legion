@@ -898,6 +898,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#qr-contact-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QR contact card
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#key-javascript-state" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1334,6 +1345,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#qr-contact-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QR contact card
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#key-javascript-state" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1601,10 +1623,19 @@ available asynchronously and fires <code>pywebviewready</code>. Both paths are h
 </tr>
 <tr>
 <td><code>panel-settings</code></td>
-<td>Settings: alias, TTL, relay, panic button</td>
+<td>Settings: alias, TTL, relay, QR contact card, panic button</td>
 </tr>
 </tbody>
 </table>
+<h3 id="qr-contact-card">QR contact card<a class="headerlink" href="#qr-contact-card" title="Permanent link">&para;</a></h3>
+<p><code>showQR()</code> calls <code>GET /api/identity/qr</code>, sets the <code>src</code> of <code>#qr-image</code> to the returned
+base64 PNG, and opens <code>modal-qr</code>. The image is rendered with <code>image-rendering: pixelated</code>
+to keep QR modules sharp at any display size.</p>
+<p><code>saveQR()</code> extracts the base64 data from the <code>&lt;img&gt;</code> src and calls
+<code>window.pywebview.api.save_file()</code> to save it as
+<code>~/Downloads/legion-contact-&lt;alias&gt;.png</code>.</p>
+<p>The QR modal includes a white-background container (required for reliable scanning by
+phone cameras) and a "Save as PNG" button for sharing the image file.</p>
 <h3 id="key-javascript-state">Key JavaScript state<a class="headerlink" href="#key-javascript-state" title="Permanent link">&para;</a></h3>
 <table>
 <thead>

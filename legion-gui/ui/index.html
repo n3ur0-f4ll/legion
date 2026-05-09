@@ -262,7 +262,10 @@
                     <section class="settings-section">
                         <h3>Contact card</h3>
                         <p class="hint">Share this with people who want to contact you.</p>
-                        <button class="btn-secondary" onclick="copyContactCard()">Copy contact card</button>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <button class="btn-secondary" onclick="copyContactCard()">Copy contact card</button>
+                            <button class="btn-secondary" onclick="showQR()">Show QR code</button>
+                        </div>
                     </section>
 
                     <section class="settings-section">
@@ -360,6 +363,22 @@
             <button class="btn-primary" onclick="inviteMember()">Invite</button>
         </div>
         <div id="invite-error" class="error-msg hidden"></div>
+    </div>
+</div>
+
+<!-- QR code modal -->
+<div id="modal-qr" class="modal hidden">
+    <div class="modal-box qr-modal-box">
+        <h3>Contact card QR</h3>
+        <p class="hint">Others can scan this to add you as a contact.</p>
+        <div class="qr-container">
+            <img id="qr-image" src="" alt="QR code" class="qr-image">
+        </div>
+        <p class="hint" id="qr-alias" style="text-align:center;margin-top:8px"></p>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="saveQR()">Save as PNG</button>
+            <button class="btn-primary" onclick="closeModal('modal-qr')">Close</button>
+        </div>
     </div>
 </div>
 

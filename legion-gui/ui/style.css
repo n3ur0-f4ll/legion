@@ -899,6 +899,32 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 /* ----------------------------------------------------------------
+   QR code modal
+   ---------------------------------------------------------------- */
+
+.qr-modal-box {
+    width: 340px;
+    align-items: center;
+}
+
+.qr-container {
+    background: #fff;
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.qr-image {
+    width: 260px;
+    height: 260px;
+    display: block;
+    image-rendering: pixelated;
+}
+
+/* ----------------------------------------------------------------
    Toast
    ---------------------------------------------------------------- */
 

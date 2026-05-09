@@ -345,6 +345,37 @@ def create_app(state: AppState) -> FastAPI:
             alias_hint=identity.alias,
         )
 
+    @app.get("/api/identity/qr")
+    async def get_contact_qr(deps=Depends(require_identity)):
+        """Return a base64 PNG QR code encoding the signed contact card."""
+        import io
+        import qrcode
+        import qrcode.constants
+        from core.protocol import build_contact_card
+        from fastapi.responses import JSONResponse
+
+        _, identity = deps
+        card = build_contact_card(
+            identity.public_key,
+            identity.onion_address,
+            identity.private_key,
+            alias_hint=identity.alias,
+        )
+        card_json = json.dumps(card, separators=(",", ":"))
+
+        qr = qrcode.QRCode(
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=6,
+            border=4,
+        )
+        qr.add_data(card_json)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return {"qr": base64.b64encode(buf.getvalue()).decode()}
+
     # ------------------------------------------------------------------
     # Contacts
     # ------------------------------------------------------------------

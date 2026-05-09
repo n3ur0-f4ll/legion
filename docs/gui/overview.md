@@ -173,7 +173,20 @@ available asynchronously and fires `pywebviewready`. Both paths are handled.
 | `panel-group` | Group chat with member list |
 | `panel-network` | Network log with bandwidth display |
 | `panel-opsec` | OpSec guide |
-| `panel-settings` | Settings: alias, TTL, relay, panic button |
+| `panel-settings` | Settings: alias, TTL, relay, QR contact card, panic button |
+
+### QR contact card
+
+`showQR()` calls `GET /api/identity/qr`, sets the `src` of `#qr-image` to the returned
+base64 PNG, and opens `modal-qr`. The image is rendered with `image-rendering: pixelated`
+to keep QR modules sharp at any display size.
+
+`saveQR()` extracts the base64 data from the `<img>` src and calls
+`window.pywebview.api.save_file()` to save it as
+`~/Downloads/legion-contact-<alias>.png`.
+
+The QR modal includes a white-background container (required for reliable scanning by
+phone cameras) and a "Save as PNG" button for sharing the image file.
 
 ### Key JavaScript state
 
