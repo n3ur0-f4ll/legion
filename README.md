@@ -164,18 +164,25 @@ ln -sf /usr/lib/python3/dist-packages/gi .venv/lib/python${PYVER}/site-packages/
 
 ## Running
 
+After installation with `install.sh`, use the launcher:
+
 ```bash
-python3 legion-gui/app/main.py
+./legion
 ```
 
-This single command:
+Or double-click the **Legion** entry in your application menu (installed automatically).
+
+The launcher:
 
 1. Starts `legion-node` in the background (no separate step needed)
-2. Waits for the node API to become available
+2. Waits up to 30 seconds for the node API to become available
 3. Opens the Legion window
 
 On first launch you will be prompted to create an identity and set a password.
 The password is required at every subsequent launch to unlock your private key.
+
+> **Without the installer:** `python3 legion-gui/app/main.py` works as a fallback,
+> provided the virtual environment is active and system dependencies are installed.
 
 ---
 
@@ -243,16 +250,21 @@ end-to-end encrypted). This feature is in active development.
 ```
 legion/
 ├── legion-node/    — user node: crypto, Tor HS, WebSocket server, local REST API
-├── legion-relay/   — optional relay node for offline message delivery
+├── legion-relay/   — optional relay node for offline message delivery (WIP)
 ├── legion-gui/     — desktop GUI (pywebview + HTML/CSS/JS)
+├── docs/           — full technical reference (MkDocs)
+├── install.sh      — automated installer (Arch · Debian · Fedora/RHEL)
+├── uninstall.sh    — uninstaller
 ├── requirements.txt
 ├── VERSION
-├── SECURITY.md     — detailed security model
+├── LICENSE         — AGPL-3.0
+├── SECURITY.md     — security model, threat analysis, cryptographic primitives
+├── SEC_AUDIT.md    — white-box penetration test and security audit report
 └── README.md
 ```
 
 `legion-node` and `legion-gui` are the two components used by end users.
-`legion-relay` is an optional self-hosted relay that delivers messages when you are offline.
+`legion-relay` is an optional self-hosted relay that delivers messages when the sender is offline — in active development.
 
 ---
 
@@ -291,7 +303,11 @@ mkdocs gh-deploy    # publishes to username.github.io/legion
 
 ## Security
 
-Legion's security model is documented in detail in **[SECURITY.md](SECURITY.md)**.
+| Document | Contents |
+|---|---|
+| **[SECURITY.md](SECURITY.md)** | Full security model — cryptographic primitives, threat analysis, group key rotation, limitations |
+| **[SEC_AUDIT.md](SEC_AUDIT.md)** | White-box penetration test and security audit — findings, severity, fixes applied, confirmed controls |
+
 The short version:
 
 - All cryptography is implemented via **libsodium** (PyNaCl) — no custom algorithms
