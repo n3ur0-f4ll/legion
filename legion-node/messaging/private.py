@@ -168,7 +168,7 @@ async def receive(
             file_name = payload.get("n", "file")
             sanitized = await sanitize_incoming_async(file_bytes, mime_type)
             payload["f"] = base64.b64encode(sanitized).decode()
-        except (FileError, Exception):
+        except Exception:
             payload = {"t": "[file could not be processed]"}
             file_name = mime_type = None
 

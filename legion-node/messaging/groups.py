@@ -117,16 +117,18 @@ async def invite_member(
 
     member_hex = member_public_key.hex()
     existing_members = await db.get_group_members(group_id)
+    contacts_map = {c["public_key"]: c for c in await db.get_contacts()}
 
     # Build roster with alias_hints: prefer contact alias, fall back to stored hint
     roster = []
+    our_hex = identity.public_key.hex()
     for m in existing_members:
         if m["public_key"] == member_hex:
             continue  # don't include the invitee themselves
-        if m["public_key"] == identity.public_key.hex():
-            hint = identity.alias  # admin's own alias
+        if m["public_key"] == our_hex:
+            hint = identity.alias
         else:
-            contact = await db.get_contact(m["public_key"])
+            contact = contacts_map.get(m["public_key"])
             hint = contact["alias"] if contact else (m.get("alias_hint") or "")
         roster.append({
             "public_key": m["public_key"],
@@ -135,7 +137,7 @@ async def invite_member(
         })
 
     # Resolve alias_hint for the new member (used in group_member_update broadcasts)
-    new_member_contact = await db.get_contact(member_hex)
+    new_member_contact = contacts_map.get(member_hex)
     new_member_alias = new_member_contact["alias"] if new_member_contact else ""
 
     # Build invite payload: group key + full member roster (Box-encrypted for invitee)
@@ -238,8 +240,8 @@ async def accept_invite(
             alias_hint=m.get("alias_hint", ""),
         )
 
-    # Add self only if not already present — our own onion is not critical for routing
-    # (others have our onion from the invite payload the admin sent them)
+    # Add self only if not already present — avoids overwriting onion_address
+    # set by invite_member on the admin's side with an empty string
     self_hex = identity.public_key.hex()
     current = await db.get_group_members(group_id)
     if not any(m["public_key"] == self_hex for m in current):

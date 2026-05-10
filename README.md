@@ -2,7 +2,9 @@
 
 **Decentralized. Anonymous. Yours.**
 
-> Version `0.1.6` · Python `≥ 3.12` · Linux only · License: AGPL-3.0
+> Version `0.1.7` · Python `≥ 3.12` · Linux only · License: AGPL-3.0
+
+> author: n3ur0-f4ll
 
 Legion is a messaging application built from the ground up for privacy and security.
 It requires no central servers, no accounts, and no phone numbers.

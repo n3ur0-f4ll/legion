@@ -33,7 +33,7 @@ import json
 import logging
 import time
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as dc_replace
 from typing import AsyncIterator
 
 import uvicorn
@@ -328,12 +328,7 @@ def create_app(state: AppState) -> FastAPI:
             raise HTTPException(status_code=422, detail="Alias cannot be empty")
         await s.db.update_identity_alias(alias)
         # Update in-memory identity
-        s.identity = identity.__class__(
-            public_key=identity.public_key,
-            private_key=identity.private_key,
-            onion_address=identity.onion_address,
-            alias=alias,
-        )
+        s.identity = dc_replace(identity, alias=alias)
         return {"alias": alias}
 
     @app.get("/api/identity/card")
@@ -549,16 +544,17 @@ def create_app(state: AppState) -> FastAPI:
         if group is None:
             raise HTTPException(status_code=404, detail="Group not found")
         members = await s.db.get_group_members(group_id)
+        contacts_map = {c["public_key"]: c for c in await s.db.get_contacts()}
         result = []
         our_key = s.identity.public_key.hex() if s.identity else ""
         for m in members:
-            contact = await s.db.get_contact(m["public_key"])
+            contact = contacts_map.get(m["public_key"])
             if contact and contact["alias"]:
-                alias = contact["alias"]                      # user's own label — highest priority
+                alias = contact["alias"]
             elif m["public_key"] == our_key and s.identity:
-                alias = s.identity.alias + " (you)"          # self
+                alias = s.identity.alias + " (you)"
             elif m.get("alias_hint"):
-                alias = m["alias_hint"]                       # hint from invite roster
+                alias = m["alias_hint"]
             else:
                 alias = None
             result.append({
@@ -593,7 +589,7 @@ def create_app(state: AppState) -> FastAPI:
 
         for msg, onion in broadcasts:
             await s.delivery_queue.enqueue(msg, onion, via_relay=False)
-        s.push_network_log("warn", "msg", f"Member removed from group, key rotated")
+        s.push_network_log("warn", "msg", "Member removed from group, key rotated")
 
     @app.post("/api/groups/{group_id}/invite", status_code=201)
     async def invite_member(
@@ -623,22 +619,21 @@ def create_app(state: AppState) -> FastAPI:
 
     @app.post("/api/groups/{group_id}/read", status_code=204)
     async def mark_group_read(group_id: str, s: AppState = Depends(get_state)):
-        import time as _time
-        await s.db.mark_group_read(group_id, int(_time.time()))
+        await s.db.mark_group_read(group_id, int(time.time()))
 
     @app.get("/api/groups/{group_id}/posts")
     async def get_posts(group_id: str, s: AppState = Depends(get_state)):
         group = await s.db.get_group(group_id)
         group_key = group["group_key"] if group else None
         posts = await groups.get_posts(s.db, group_id)
-        # Build alias_hint lookup from group_members to avoid per-post DB call
         members_list = await s.db.get_group_members(group_id)
         hints = {m["public_key"]: m.get("alias_hint", "") for m in members_list}
+        contacts_map = {c["public_key"]: c for c in await s.db.get_contacts()}
 
         result = []
         for row in posts:
             decrypted = _decrypt_post(row, group_key)
-            contact = await s.db.get_contact(row["author_key"])
+            contact = contacts_map.get(row["author_key"])
             if contact and contact["alias"]:
                 decrypted["author_alias"] = contact["alias"]
             elif hints.get(row["author_key"]):

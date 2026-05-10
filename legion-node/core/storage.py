@@ -29,6 +29,7 @@ from __future__ import annotations
 import logging
 import pathlib
 import sqlite3
+import time
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -252,11 +253,10 @@ class Database:
 
     async def mark_conversation_read(self, peer_key: str, our_key: str) -> None:
         """Mark all incoming messages from peer_key as read."""
-        import time as _time
         await self._conn.execute(
             "UPDATE messages SET read_at = ? "
             "WHERE from_key = ? AND to_key = ? AND read_at IS NULL",
-            (int(_time.time()), peer_key, our_key),
+            (int(time.time()), peer_key, our_key),
         )
         await self._conn.commit()
 
@@ -276,7 +276,7 @@ class Database:
         if ids:
             placeholders = ",".join("?" * len(ids))
             await self._conn.execute(
-                f"DELETE FROM messages WHERE id IN ({placeholders})", ids
+                f"DELETE FROM messages WHERE id IN ({placeholders})", list(ids)
             )
             await self._conn.commit()
         return ids
@@ -390,27 +390,28 @@ class Database:
         """Return count of unread posts in a group.
 
         Excludes posts authored by our_key — your own sent posts are never unread.
+        Uses a single subquery to avoid two round-trips.
         """
-        async with self._conn.execute(
-            "SELECT last_read_at FROM groups WHERE id = ?", (group_id,)
-        ) as cur:
-            row = await cur.fetchone()
-        last_read = row["last_read_at"] if row else 0
-
         if our_key:
-            async with self._conn.execute(
+            sql = (
                 "SELECT COUNT(*) as cnt FROM group_posts "
-                "WHERE group_id = ? AND timestamp > ? AND author_key != ?",
-                (group_id, last_read, our_key),
-            ) as cur:
-                row = await cur.fetchone()
+                "WHERE group_id = ? AND author_key != ? "
+                "AND timestamp > ("
+                "  SELECT COALESCE(last_read_at, 0) FROM groups WHERE id = ?"
+                ")"
+            )
+            params = (group_id, our_key, group_id)
         else:
-            async with self._conn.execute(
+            sql = (
                 "SELECT COUNT(*) as cnt FROM group_posts "
-                "WHERE group_id = ? AND timestamp > ?",
-                (group_id, last_read),
-            ) as cur:
-                row = await cur.fetchone()
+                "WHERE group_id = ? "
+                "AND timestamp > ("
+                "  SELECT COALESCE(last_read_at, 0) FROM groups WHERE id = ?"
+                ")"
+            )
+            params = (group_id, group_id)
+        async with self._conn.execute(sql, params) as cur:
+            row = await cur.fetchone()
         return row["cnt"] if row else 0
 
     async def get_group_members(self, group_id: str) -> list[dict]:

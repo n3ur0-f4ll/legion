@@ -37,7 +37,6 @@ from PIL import Image, UnidentifiedImageError
 
 MAX_FILE_SIZE: Final = 5 * 1024 * 1024  # 5 MB
 
-# Dozwolone typy MIME i ich sygnatury magic bytes
 _IMAGE_SIGNATURES: Final[dict[str, bytes]] = {
     "image/jpeg": b"\xff\xd8\xff",
     "image/png":  b"\x89PNG\r\n\x1a\n",
@@ -76,7 +75,6 @@ def prepare_outgoing(data: bytes, file_name: str, mime_type: str) -> bytes:
     if mime_type in _IMAGE_SIGNATURES:
         return _sanitize_image(data, mime_type)
 
-    # All other types: pass through (size + name already validated)
     return data
 
 
@@ -132,7 +130,7 @@ def _sanitize_image(data: bytes, mime_type: str) -> bytes:
 
     try:
         img = Image.open(io.BytesIO(data))
-        img.load()  # full decode — validates integrity, catches truncated images
+        img.load()  # catches truncated images and validates integrity
 
         # JPEG requires RGB or L mode
         if mime_type == "image/jpeg" and img.mode not in ("RGB", "L"):

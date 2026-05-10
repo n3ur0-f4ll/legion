@@ -157,8 +157,6 @@ async def _run(config: Config, interactive: bool = True) -> None:
         # TTL expiry cleanup — runs immediately, then every hour
         cleanup_task = asyncio.create_task(_cleanup_loop(db))
 
-        # Interactive mode: identity loaded from DB — start Tor now synchronously
-        # Non-interactive (GUI) mode: Tor starts after identity unlock via API
         if identity is not None:
             try:
                 onion = await tor.start(identity.private_key, hs_port=config.node_port)

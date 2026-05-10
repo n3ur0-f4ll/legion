@@ -20,6 +20,9 @@ let netLogAutoScroll = true;  // auto-scroll unless user scrolled up
 
 // Burn after reading state
 let msgBurn = false;
+
+// Image MIME types safe to render as <img> — SVG excluded (may contain scripts)
+const SAFE_IMG_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 let _pendingMarkRead = null;  // public_key of conversation to mark-read when user navigates away
 
 // TTL state
@@ -476,7 +479,6 @@ async function openConversation(contact) {
 
     showPanel("messages");
     await loadMessages(contact);
-    await loadContacts();  // refresh sidebar (no mark_read yet — burn messages still alive)
 }
 
 async function loadMessages(contact) {
@@ -502,18 +504,14 @@ async function loadMessages(contact) {
                 ? `<span class="status-icon ${msg.status}" title="${msg.status}">${statusIcon[msg.status] || ''}</span>${cancelBtn}`
                 : '';
 
-            // Only these three types are rendered as images — prevents SVG/arbitrary image/* injection
-            const _SAFE_IMG = new Set(["image/jpeg", "image/png", "image/webp"]);
             let content;
-            let _fileSave = null;   // deferred: { data, name } — attached via addEventListener, never via onclick
+            let _fileSave = null;
             if (msg.file_data && msg.mime_type) {
                 const name = esc(msg.file_name || "file");
                 const size = Math.round(atob(msg.file_data).length / 1024);
-                // Save button uses a class marker — data passed via closure, NOT inline onclick attribute
-                // (inline onclick with file_name would be XSS if name contains single quotes)
                 const saveBtn = `<button class="btn-copy btn-save-file" style="margin-top:6px">↓ Save</button>`;
                 _fileSave = { data: msg.file_data, name: msg.file_name || "file" };
-                if (_SAFE_IMG.has(msg.mime_type)) {
+                if (SAFE_IMG_TYPES.has(msg.mime_type)) {
                     const dataUrl = `data:${msg.mime_type};base64,${msg.file_data}`;
                     content = `<img class="msg-image" src="${dataUrl}" alt="${name}">${saveBtn}`;
                 } else {
@@ -707,7 +705,6 @@ async function loadPosts(group) {
             const bubble = document.createElement("div");
             bubble.className = `message-bubble ${isOurs ? "outgoing" : "incoming"}`;
             const ts = new Date(post.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
-            // Fix 3: show alias instead of raw key
             const author = isOurs
                 ? "You"
                 : esc(post.author_alias || (post.author_key.slice(0, 10) + "…"));
@@ -1037,7 +1034,6 @@ async function loadMemberList() {
             const div = document.createElement("div");
             div.className = "member-item";
             const adminBadge = m.is_admin ? `<span class="member-admin-badge">admin</span>` : "";
-            // Fix 2: show alias if available, fall back to truncated key
             const displayName = m.alias
                 ? esc(m.alias)
                 : `<span style="color:var(--text-secondary)">${m.public_key.slice(0, 20)}…</span>`;
@@ -1059,7 +1055,6 @@ async function removeMember(publicKey) {
     try {
         await api("DELETE", `/api/groups/${currentGroup.id}/members/${publicKey}`);
         showToast("Member removed, key rotated");
-        // Fix 2: show system message for the admin immediately
         appendSystemPost(`${publicKey.slice(0, 10)}… was removed — key rotated`);
         await loadMemberList();
     } catch (err) {
@@ -1124,7 +1119,6 @@ async function inviteMember() {
         });
         closeModal("modal-invite");
         showToast("Invitation sent");
-        // Fix 1: system message visible to admin immediately after inviting
         const label = sel.selectedOptions[0]?.textContent || pubkey.slice(0, 10) + "…";
         appendSystemPost(`${esc(label)} was invited to the group`);
         await loadMemberList();
