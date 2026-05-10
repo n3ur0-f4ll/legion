@@ -57,6 +57,8 @@ from core.protocol import (
     validate_contact_card,
     MalformedMessage,
     InvalidSignature,
+    build_message,
+    MSG_READ_RECEIPT,
 )
 from core.storage import Database
 from messaging import private, groups
@@ -147,6 +149,7 @@ class SendMessageRequest(BaseModel):
     file_name: str | None = None
     mime_type: str | None = None
     ttl: int | None = None         # per-message TTL override (seconds); None = use identity default
+    burn: bool = False             # burn after reading: deleted from receiver on read, sender on receipt
 
 
 class CreateGroupRequest(BaseModel):
@@ -439,7 +442,35 @@ def create_app(state: AppState) -> FastAPI:
     @app.post("/api/messages/{public_key}/read", status_code=204)
     async def mark_read(public_key: str, deps=Depends(require_identity)):
         s, identity = deps
-        await s.db.mark_conversation_read(public_key, identity.public_key.hex())
+        our_hex = identity.public_key.hex()
+
+        # Delete burn-after-reading messages immediately and collect their IDs
+        burn_ids = await s.db.burn_read_messages(public_key, our_hex)
+
+        # Mark remaining messages as read normally
+        await s.db.mark_conversation_read(public_key, our_hex)
+
+        if burn_ids:
+            # Push SSE so GUI removes burned messages from the conversation view
+            for msg_id in burn_ids:
+                s.push_event("message_burned", {"id": msg_id})
+
+            # Send read_receipt to original sender so they can delete too
+            contact = await s.db.get_contact(public_key)
+            if contact and contact.get("onion_address"):
+                sender_pub = bytes.fromhex(public_key)
+                for msg_id in burn_ids:
+                    receipt_payload = json.dumps({"message_id": msg_id}).encode()
+                    ct = crypto.encrypt(identity.private_key, sender_pub, receipt_payload)
+                    receipt_msg = build_message(
+                        type=MSG_READ_RECEIPT,
+                        from_key=identity.public_key,
+                        to_key=sender_pub,
+                        payload=ct,
+                        private_key=identity.private_key,
+                    )
+                    dst, via_relay = await choose_destination(s.db, contact["onion_address"])
+                    await s.delivery_queue.enqueue(receipt_msg, dst, via_relay=via_relay)
 
     @app.get("/api/messages/{public_key}")
     async def get_messages(public_key: str, deps=Depends(require_identity)):
@@ -471,12 +502,12 @@ def create_app(state: AppState) -> FastAPI:
                 file_bytes = base64.b64decode(req.file_data)
                 msg = await private.send_file(
                     s.db, identity, recipient_key,
-                    file_bytes, req.file_name, req.mime_type, ttl=ttl,
+                    file_bytes, req.file_name, req.mime_type, ttl=ttl, burn=req.burn,
                 )
             except FileError as exc:
                 raise HTTPException(status_code=422, detail=str(exc))
         else:
-            msg = await private.send(s.db, identity, recipient_key, req.text or "", ttl=ttl)
+            msg = await private.send(s.db, identity, recipient_key, req.text or "", ttl=ttl, burn=req.burn)
 
         destination_onion, via_relay = await choose_destination(s.db, req.onion)
         await s.delivery_queue.enqueue(msg, destination_onion, via_relay=via_relay)
@@ -797,6 +828,25 @@ def make_message_handler(state: AppState):
                     })
                     state.push_network_log("info", "msg",
                         f"← Group key rotated by {sender[:8]}…")
+            except Exception:
+                pass
+
+        elif msg_type == MSG_READ_RECEIPT:
+            # Receiver confirmed reading a burn-after-reading message — delete it locally
+            if not await state.db.is_contact(sender):
+                return
+            try:
+                ciphertext = base64.b64decode(msg["payload"])
+                sender_pub = bytes.fromhex(sender)
+                raw = crypto.decrypt(state.identity.private_key, sender_pub, ciphertext)
+                receipt = json.loads(raw)
+                message_id = receipt.get("message_id", "")
+                if message_id:
+                    burned = await state.db.delete_if_burn(message_id)
+                    if burned:
+                        state.push_event("message_burned", {"id": message_id})
+                        state.push_network_log("info", "msg",
+                            f"✓ Burned by recipient: {message_id[:8]}…")
             except Exception:
                 pass
 

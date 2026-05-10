@@ -37,6 +37,7 @@ import asyncio
 import getpass
 import logging
 import sys
+import time
 
 from api.server import AppState, make_message_handler, run_app
 from config import Config
@@ -92,6 +93,29 @@ async def _load_identity(db: Database) -> Identity | None:
 # Core async entry point
 # ------------------------------------------------------------------
 
+async def _cleanup_loop(db: Database) -> None:
+    """Background task: delete expired messages and group posts once per hour.
+
+    Runs once immediately on startup so messages expired before the last shutdown
+    are cleaned up right away, then repeats every 3600 seconds.
+    """
+    while True:
+        try:
+            now = int(time.time())
+            msgs = await db.delete_expired_messages(now)
+            posts = await db.delete_expired_group_posts(now)
+            if msgs or posts:
+                logger.info("Cleanup: removed %d expired messages, %d group posts", msgs, posts)
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            logger.exception("Error in cleanup loop")
+        try:
+            await asyncio.sleep(3600)
+        except asyncio.CancelledError:
+            break
+
+
 async def _run(config: Config, interactive: bool = True) -> None:
     config.ensure_dirs()
 
@@ -130,6 +154,9 @@ async def _run(config: Config, interactive: bool = True) -> None:
         # DeliveryQueue background loop
         await dq.start()
 
+        # TTL expiry cleanup — runs immediately, then every hour
+        cleanup_task = asyncio.create_task(_cleanup_loop(db))
+
         # Interactive mode: identity loaded from DB — start Tor now synchronously
         # Non-interactive (GUI) mode: Tor starts after identity unlock via API
         if identity is not None:
@@ -149,6 +176,11 @@ async def _run(config: Config, interactive: bool = True) -> None:
             await run_app(state, config.api_port)
         finally:
             logger.info("Shutting down...")
+            cleanup_task.cancel()
+            try:
+                await cleanup_task
+            except asyncio.CancelledError:
+                pass
             await dq.stop()
             await node_server.stop()
             if tor.is_running:

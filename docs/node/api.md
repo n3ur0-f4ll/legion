@@ -146,11 +146,17 @@ Cancels delivery retries for a queued message:
 2. `db.update_message_status(message_id, "failed")`
 
 #### `POST /api/messages/{public_key}/read` (204)
-Marks all incoming messages from `public_key` as read (`read_at = now`).
+Marks incoming messages as read and handles burn-after-reading:
+
+1. `db.burn_read_messages(peer, our_key)` — deletes unread burn messages immediately, returns their IDs
+2. `db.mark_conversation_read(peer, our_key)` — marks remaining messages as read (`read_at = now`)
+3. For each burned message: pushes `message_burned` SSE event so GUI removes it from view
+4. Sends an encrypted `read_receipt` message back to the sender for each burned message
 
 #### `GET /api/messages/{public_key}`
 Returns all messages in a conversation, decrypted on-the-fly by `_decrypt_message()`.
-Each message includes `text` (plaintext or null) and `file_data` (base64 or null).
+Each message includes `text` (plaintext or null), `file_data` (base64 or null),
+and `burn_after_reading` (0 or 1).
 
 #### `POST /api/messages` (201)
 Sends a message:
@@ -158,8 +164,9 @@ Sends a message:
 1. Resolves TTL: `req.ttl` → `identity.default_ttl` → `DEFAULT_TTL` (7 days)
 2. If `file_data`: decodes base64, calls `private.send_file()` (includes sanitization)
 3. Otherwise: calls `private.send()`
-4. Calls `choose_destination()` to decide direct vs relay routing
-5. Enqueues in delivery queue
+4. `req.burn` (bool, default false): sets `burn_after_reading` flag in payload and DB
+5. Calls `choose_destination()` to decide direct vs relay routing
+6. Enqueues in delivery queue
 
 ---
 
@@ -249,6 +256,7 @@ Each event is `data: {json}\n\n`.
 | `group_member_update` | `from, op, group_id, public_key, alias_hint, group_name, voluntary?, dissolved?` | Roster change |
 | `group_key_update` | `from, group_id` | Group key rotated |
 | `delivery_status` | `id, status` | Message delivered |
+| `message_burned` | `id` | Burn-after-reading message deleted (receiver: on mark_read; sender: on read_receipt) |
 | `tor_ready` | `onion_address` | Hidden Service published |
 | `tor_status` | `status, error?` | Tor starting or failed |
 | `network_log` | `level, category, text, ts` | Network activity log entry |

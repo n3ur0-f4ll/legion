@@ -56,6 +56,7 @@ the content, the metadata, and the infrastructure itself.
 - **Private key encrypted at rest** — Argon2id password hashing, password required at every launch
 - **Group chats** — shared symmetric key, peer-to-peer delivery, automatic key rotation on member removal
 - **File transfer** — images re-encoded by Pillow before sending (GPS, EXIF and all metadata stripped)
+- **Burn after reading** — messages marked with 🔥 are deleted from the recipient's device when they leave the conversation (giving them time to read at their own pace), and from the sender's device once the recipient confirms they read it
 - **Persistent delivery queue** — messages retry every 10 seconds while Legion is running; state is saved so retries resume after reopening the app
 - **QR contact card** — generate a QR code of your contact card for easy sharing; others scan it with any phone camera
 - **Panic button** — immediately and irreversibly destroys all local data (identity, messages, contacts, groups)
@@ -69,7 +70,7 @@ For a detailed explanation of the security model see **[SECURITY.md](SECURITY.md
 
 ### Operating system
 
-Linux only. Tested on Arch / Manjaro.
+Linux only. Tested on Arch.
 
 ### System packages
 
@@ -234,6 +235,9 @@ The trade-off is real but intentional: **the absence of a server is the security
   message arrives — you do not need to do anything.
 - The `…` status indicator on a sent message means it is still queued. A `✓` means it
   was delivered. You can cancel a queued message at any time by clicking `×` next to it.
+- To send a message that deletes itself after being read, click the 🔥 button before
+  sending. The message stays visible until the recipient leaves the conversation —
+  giving them time to read — then disappears from both devices automatically.
 
 ### Relay node (coming soon)
 
@@ -260,6 +264,7 @@ legion/
 ├── LICENSE         — AGPL-3.0
 ├── SECURITY.md     — security model, threat analysis, cryptographic primitives
 ├── SEC_AUDIT.md    — white-box penetration test and security audit report
+├── DECISIONS.md    — deliberately rejected features and the reasoning behind each
 └── README.md
 ```
 

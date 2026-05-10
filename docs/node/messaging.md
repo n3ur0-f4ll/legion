@@ -16,17 +16,21 @@ the encrypted blob so the same message type can carry text or files.
 The plaintext inside every private message ciphertext is a JSON object:
 
 ```json
-{ "t": "hello world" }           // text message
-{ "f": "<base64>", "n": "photo.jpg", "m": "image/jpeg" }  // file
+{ "t": "hello world" }                                              // text
+{ "f": "<base64>", "n": "photo.jpg", "m": "image/jpeg" }           // file
+{ "t": "eyes only", "burn": true }                                  // burn after reading
+{ "f": "<base64>", "n": "doc.pdf", "m": "application/pdf", "burn": true }
 ```
 
-This envelope is **inside** the Box ciphertext — the outer protocol layer only sees
-an opaque encrypted blob.
+The `burn` field is **inside** the Box ciphertext — invisible to anyone except the
+intended recipient. It cannot be added or removed in transit without breaking the
+authentication tag.
 
 ### Functions
 
-#### `send(db, identity, recipient_public_key, plaintext, ttl) → dict`
-Sends a text message:
+#### `send(db, identity, recipient_public_key, plaintext, ttl, burn=False) → dict`
+Sends a text message. When `burn=True`, sets `"burn": True` in the payload JSON and
+`burn_after_reading=1` in the local DB row:
 
 1. Encodes `{"t": plaintext}` to bytes
 2. Encrypts with `crypto.encrypt(identity.private_key, recipient_public_key, payload)`
@@ -320,6 +324,50 @@ Returns `True` (sent), `False` (failed, retry scheduled), or `None` (orphan remo
 
 There is no maximum retry count — the queue retries indefinitely until the message
 is delivered or the user cancels via `DELETE /api/messages/{id}`.
+
+---
+
+## TTL expiry cleanup (`main.py`)
+
+`delete_expired_messages()` and `delete_expired_group_posts()` exist in `storage.py`
+but need to be called periodically. `main.py` launches `_cleanup_loop(db)` as a
+background `asyncio.Task` that:
+
+1. Runs **immediately** on startup (cleans up messages that expired during downtime)
+2. Sleeps 3600 seconds
+3. Repeats until cancelled at shutdown
+
+This loop is the only caller of the two expiry functions. Without it, TTL-based
+message expiry would silently not work — messages would accumulate indefinitely.
+
+---
+
+## Burn after reading (`private.py` + `server.py`)
+
+End-to-end encrypted flag that causes a message to self-delete after the recipient
+reads it. The `burn` flag lives inside the encrypted payload, not in the outer
+protocol envelope — it cannot be observed or modified in transit.
+
+### Flow
+
+1. **Sender** calls `private.send(..., burn=True)` or `private.send_file(..., burn=True)`.
+   - Payload JSON contains `"burn": true`
+   - DB stores `burn_after_reading = 1`
+
+2. **Receiver** decrypts payload, extracts `burn` flag, stores `burn_after_reading = 1`.
+
+3. **Receiver's GUI** loads messages first (user reads them), then navigates away.
+   Navigation triggers `POST /api/messages/{key}/read` which calls
+   `db.burn_read_messages()` — deletes burn messages immediately, returns their IDs.
+   Pushes `message_burned` SSE for each ID. Sends an encrypted `read_receipt` message
+   (type `read_receipt`) back to the sender.
+
+4. **Sender** receives `read_receipt`, decrypts to get `message_id`, calls
+   `db.delete_if_burn(message_id)` — deletes only if `burn_after_reading = 1`.
+   Pushes `message_burned` SSE.
+
+If the sender is offline when the receipt arrives, the message remains until TTL
+expiry (cleaned up by `_cleanup_loop`). This is the expected P2P trade-off.
 
 ### Type aliases
 

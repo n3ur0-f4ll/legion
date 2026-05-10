@@ -40,14 +40,15 @@ from messaging.files import FileError, prepare_outgoing_async, sanitize_incoming
 
 
 def _encode_payload(text: str | None, file_data: bytes | None,
-                    file_name: str | None, mime_type: str | None) -> bytes:
+                    file_name: str | None, mime_type: str | None,
+                    burn: bool = False) -> bytes:
     if file_data is not None:
-        return json.dumps({
-            "f": base64.b64encode(file_data).decode(),
-            "n": file_name,
-            "m": mime_type,
-        }).encode()
-    return json.dumps({"t": text or ""}).encode()
+        data: dict = {"f": base64.b64encode(file_data).decode(), "n": file_name, "m": mime_type}
+    else:
+        data = {"t": text or ""}
+    if burn:
+        data["burn"] = True
+    return json.dumps(data).encode()
 
 
 def _decode_payload(raw: bytes) -> dict:
@@ -70,9 +71,10 @@ async def send(
     recipient_public_key: bytes,
     plaintext: str,
     ttl: int = DEFAULT_TTL,
+    burn: bool = False,
 ) -> dict:
     """Encrypt a text message and build a signed protocol message."""
-    payload_bytes = _encode_payload(plaintext, None, None, None)
+    payload_bytes = _encode_payload(plaintext, None, None, None, burn=burn)
     ciphertext = crypto.encrypt(identity.private_key, recipient_public_key, payload_bytes)
 
     msg = build_message(
@@ -93,6 +95,7 @@ async def send(
         timestamp=msg["timestamp"],
         expires_at=msg["timestamp"] + ttl,
         status="queued",
+        burn_after_reading=burn,
     )
     return msg
 
@@ -105,10 +108,11 @@ async def send_file(
     file_name: str,
     mime_type: str,
     ttl: int = DEFAULT_TTL,
+    burn: bool = False,
 ) -> dict:
     """Sanitize, encrypt and send a file. Raises FileError on invalid input."""
     sanitized = await prepare_outgoing_async(file_data, file_name, mime_type)
-    payload_bytes = _encode_payload(None, sanitized, file_name, mime_type)
+    payload_bytes = _encode_payload(None, sanitized, file_name, mime_type, burn=burn)
     ciphertext = crypto.encrypt(identity.private_key, recipient_public_key, payload_bytes)
 
     msg = build_message(
@@ -131,6 +135,7 @@ async def send_file(
         status="queued",
         file_name=file_name,
         mime_type=mime_type,
+        burn_after_reading=burn,
     )
     return msg
 
@@ -153,6 +158,7 @@ async def receive(
     raw = crypto.decrypt(identity.private_key, sender_public_key, ciphertext)
     payload = _decode_payload(raw)
 
+    burn_after_reading = bool(payload.get("burn", False))
     file_name = mime_type = None
     if "f" in payload:
         # Sanitize received file on the receiver side
@@ -177,6 +183,7 @@ async def receive(
         status="delivered",
         file_name=file_name,
         mime_type=mime_type,
+        burn_after_reading=burn_after_reading,
     )
     # INSERT OR IGNORE won't update an existing row (e.g. sender's own outgoing message),
     # so we always force the status to "delivered" with an explicit UPDATE.

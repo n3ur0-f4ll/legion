@@ -215,14 +215,15 @@ class Database:
         status: str,
         file_name: str | None = None,
         mime_type: str | None = None,
+        burn_after_reading: bool = False,
     ) -> None:
         await self._conn.execute(
             "INSERT OR IGNORE INTO messages "
             "(id, from_key, to_key, payload, signature, timestamp, expires_at, status, "
-            "file_name, mime_type) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "file_name, mime_type, burn_after_reading) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (id, from_key, to_key, payload, signature, timestamp, expires_at, status,
-             file_name, mime_type),
+             file_name, mime_type, int(burn_after_reading)),
         )
         await self._conn.commit()
 
@@ -258,6 +259,42 @@ class Database:
             (int(_time.time()), peer_key, our_key),
         )
         await self._conn.commit()
+
+    async def burn_read_messages(self, peer_key: str, our_key: str) -> list[str]:
+        """Delete unread burn-after-reading messages from peer. Returns their IDs.
+
+        Called before mark_conversation_read so the receiver sees the messages
+        once (loadMessages already fetched them) then they are gone server-side.
+        """
+        async with self._conn.execute(
+            "SELECT id FROM messages "
+            "WHERE from_key = ? AND to_key = ? AND read_at IS NULL AND burn_after_reading = 1",
+            (peer_key, our_key),
+        ) as cur:
+            rows = await cur.fetchall()
+        ids = [r["id"] for r in rows]
+        if ids:
+            placeholders = ",".join("?" * len(ids))
+            await self._conn.execute(
+                f"DELETE FROM messages WHERE id IN ({placeholders})", ids
+            )
+            await self._conn.commit()
+        return ids
+
+    async def delete_if_burn(self, message_id: str) -> bool:
+        """Delete a message if burn_after_reading is set. Returns True if deleted.
+
+        Called on the sender's side when a read_receipt arrives.
+        """
+        async with self._conn.execute(
+            "SELECT burn_after_reading FROM messages WHERE id = ?", (message_id,)
+        ) as cur:
+            row = await cur.fetchone()
+        if row and row["burn_after_reading"]:
+            await self._conn.execute("DELETE FROM messages WHERE id = ?", (message_id,))
+            await self._conn.commit()
+            return True
+        return False
 
     async def get_unread_counts(self, our_key: str) -> dict:
         """Return {sender_key: count} for unread incoming messages."""
@@ -495,6 +532,7 @@ async def _apply_schema(conn: aiosqlite.Connection) -> None:
         "ALTER TABLE group_members ADD COLUMN onion_address TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE group_members ADD COLUMN alias_hint TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE groups ADD COLUMN last_read_at INTEGER DEFAULT 0",
+        "ALTER TABLE messages ADD COLUMN burn_after_reading INTEGER DEFAULT 0",
     ):
         try:
             await conn.execute(migration)

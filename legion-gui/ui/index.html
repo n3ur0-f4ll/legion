@@ -68,7 +68,11 @@
 
     <!-- Status bar -->
     <div id="statusbar">
-        <span id="status-tor" class="status-indicator status-unknown" title="" onclick="retryTor()" style="cursor:pointer">Tor</span>
+        <span id="status-tor" class="status-indicator status-unknown" title="" onclick="retryTor()" style="cursor:pointer">TOR</span>
+        <div class="bw-display" id="bw-display">
+            <span class="bw-up">↑ –</span>
+            <span class="bw-dn">↓ –</span>
+        </div>
         <span id="status-queue" class="status-queue hidden">⋯ <span id="queue-count">0</span> queued</span>
         <span id="status-alias" class="status-alias"></span>
     </div>
@@ -132,6 +136,7 @@
                         </button>
                         <div class="ttl-dropdown hidden" id="ttl-dropdown"></div>
                     </div>
+                    <button class="btn-burn" id="btn-burn" onclick="toggleBurn()" title="Burn after reading: OFF">🔥</button>
                     <button class="btn-send" onclick="sendMessage()">Send</button>
                 </div>
                 <div id="file-preview" class="file-preview hidden">
@@ -165,10 +170,6 @@
             <div id="panel-network" class="panel hidden">
                 <div class="panel-header">
                     <span class="panel-title">Network Log</span>
-                    <div class="bw-display" id="bw-display">
-                        <span class="bw-up">↑ –</span>
-                        <span class="bw-dn">↓ –</span>
-                    </div>
                     <div class="net-filter-bar">
                         <button class="net-filter-btn active" id="nf-all" onclick="setNetFilter('all')">All</button>
                         <button class="net-filter-btn" id="nf-tor" onclick="setNetFilter('tor')">Tor</button>
@@ -355,7 +356,7 @@
     <div class="modal-box">
         <h3>Invite member</h3>
         <p class="hint">Select a contact to invite to the group.</p>
-        <select id="invite-contact-select" style="width:100%">
+        <select id="invite-contact-select">
             <option value="">— select contact —</option>
         </select>
         <div class="modal-actions">

@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS messages (
         CHECK (status IN ('queued', 'sent', 'delivered', 'failed')),
     read_at         INTEGER DEFAULT NULL,
     file_name       TEXT DEFAULT NULL,
-    mime_type       TEXT DEFAULT NULL
+    mime_type       TEXT DEFAULT NULL,
+    burn_after_reading INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS groups (

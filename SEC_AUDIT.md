@@ -40,7 +40,7 @@ Two medium-severity vulnerabilities were identified and fixed during the audit:
 - **SEC-001**: Cross-site scripting (XSS) via file attachment file name embedded in an `onclick` HTML attribute. A malicious contact could execute arbitrary JavaScript in the pywebview window, gaining full access to the Legion API.
 - **SEC-002**: The receiver-side file sanitization function did not check blocked MIME types (SVG, HTML), and the GUI rendered any `image/*` MIME type as an `<img>` element. A malicious contact could send a file declared as `image/svg+xml` containing embedded scripts.
 
-Both issues were fixed at the source before this report was finalised. All 271 automated tests continue to pass.
+Both issues were fixed at the source before this report was finalised. All 271 automated tests continue to pass (292 as of v0.1.6 post-audit, including burn-after-reading test suite).
 
 The cryptographic foundations — Ed25519, Argon2id, X25519+XSalsa20-Poly1305, and SecretBox — are implemented correctly using libsodium (PyNaCl). Plaintext messages are never written to disk. The Tor integration provides network-level anonymity. The panic button performs a forensically sound wipe including `VACUUM` to overwrite freed SQLite pages.
 
@@ -57,7 +57,7 @@ The cryptographic foundations — Ed25519, Argon2id, X25519+XSalsa20-Poly1305, a
 | `legion-node/network/` | `tor.py`, `node.py`, `client.py`, `relay.py` |
 | `legion-node/api/` | `server.py` |
 | `legion-node/` | `main.py`, `config.py`, `data/schema.sql` |
-| `legion-node/tests/` | All 13 test files (271 tests) |
+| `legion-node/tests/` | All 14 test files (292 tests) |
 | `legion-gui/app/` | `main.py`, `bridge.py` |
 | `legion-gui/ui/` | `app.js`, `index.html`, `style.css` |
 | `legion-gui/` | `config.py` |
@@ -665,4 +665,4 @@ Before implementing the relay feature (roadmap), the relay protocol should under
 
 ---
 
-*This report was produced by static white-box analysis of the full source code. All test suites (271 tests) continue to pass after applied fixes.*
+*This report was produced by static white-box analysis of the full source code. All test suites (292 tests across 14 files) continue to pass after applied fixes.*

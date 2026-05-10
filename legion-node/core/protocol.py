@@ -48,11 +48,12 @@ MSG_GROUP_MEMBER_UPDATE = "group_member_update"  # admin broadcasts roster chang
 MSG_GROUP_KEY_UPDATE = "group_key_update"         # admin broadcasts new key after rotation
 MSG_DELIVERY_ACK = "delivery_ack"
 MSG_CONTACT_CARD = "contact_card"
+MSG_READ_RECEIPT = "read_receipt"                 # receiver confirms burn-after-reading read
 
 _VALID_TYPES = frozenset({
     MSG_PRIVATE, MSG_GROUP_POST, MSG_GROUP_INVITE,
     MSG_GROUP_MEMBER_UPDATE, MSG_GROUP_KEY_UPDATE,
-    MSG_DELIVERY_ACK, MSG_CONTACT_CARD,
+    MSG_DELIVERY_ACK, MSG_CONTACT_CARD, MSG_READ_RECEIPT,
 })
 _REQUIRED_FIELDS = frozenset(
     {"v", "type", "id", "from", "to", "payload", "signature", "timestamp", "ttl"}

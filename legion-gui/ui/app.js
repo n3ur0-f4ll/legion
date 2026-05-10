@@ -18,6 +18,10 @@ let networkLog = [];          // ring buffer of log entries
 let netFilter = "all";        // "all" | "tor" | "msg"
 let netLogAutoScroll = true;  // auto-scroll unless user scrolled up
 
+// Burn after reading state
+let msgBurn = false;
+let _pendingMarkRead = null;  // public_key of conversation to mark-read when user navigates away
+
 // TTL state
 const TTL_OPTIONS = [
     { label: "1 hour",  short: "1h",  seconds: 3600 },
@@ -139,6 +143,17 @@ function switchTab(tab) {
     else showPanel("welcome");
 }
 
+async function _flushMarkRead() {
+    // Call mark_read for the conversation the user is leaving.
+    // For burn messages this is the moment they actually get deleted —
+    // the user has had all the time they needed to read them.
+    if (!_pendingMarkRead) return;
+    const key = _pendingMarkRead;
+    _pendingMarkRead = null;
+    try { await api("POST", `/api/messages/${key}/read`); } catch (_) {}
+    await loadContacts();
+}
+
 // ================================================================
 // Main dashboard
 // ================================================================
@@ -169,7 +184,8 @@ async function loadContacts() {
             const div = document.createElement("div");
             div.className = "contact-item";
             div.dataset.key = c.public_key;
-            const badge = c.unread_count > 0
+            const isActive = currentContact && currentContact.public_key === c.public_key;
+            const badge = (!isActive && c.unread_count > 0)
                 ? `<span class="unread-badge">${c.unread_count}</span>` : "";
             div.innerHTML = `
                 <div class="item-info">
@@ -229,19 +245,19 @@ async function updateStatus() {
         const status = await api("GET", "/api/status");
         const torEl = document.getElementById("status-tor");
         if (status.tor_running) {
-            torEl.textContent = "Tor ✓";
+            torEl.textContent = "TOR ✓";
             torEl.className = "status-indicator status-ok";
             torEl.title = status.onion_address + "\n\nClick to open Network log";
         } else if (status.tor_starting) {
-            torEl.textContent = "Tor …";
+            torEl.textContent = "TOR …";
             torEl.className = "status-indicator status-unknown";
             torEl.title = "Tor is starting…";
         } else if (status.tor_error) {
-            torEl.textContent = "Tor ✗";
+            torEl.textContent = "TOR ✗";
             torEl.className = "status-indicator status-error";
             torEl.title = status.tor_error + "\n\nClick to retry";
         } else {
-            torEl.textContent = "Tor ✗";
+            torEl.textContent = "TOR ✗";
             torEl.className = "status-indicator status-error";
             torEl.title = "Tor is not running. Click to start.";
         }
@@ -291,8 +307,8 @@ function connectSSE() {
 async function handleEvent(event) {
     if (event.type === "message") {
         if (currentContact && event.from === currentContact.public_key) {
-            // Conversation is open — mark as read immediately, no badge needed
-            try { await api("POST", `/api/messages/${event.from}/read`); } catch (_) {}
+            // Conversation is open — reload messages; burn messages are NOT marked
+            // read yet (that happens when the user navigates away via _flushMarkRead)
             loadMessages(currentContact);
         }
         loadContacts(); // refresh sidebar badges
@@ -355,6 +371,15 @@ async function handleEvent(event) {
             appendSystemPost("Group key was rotated");
         }
         loadGroups();
+    } else if (event.type === "message_burned") {
+        // Remove burned message from conversation view (receiver burned it on read,
+        // or sender got confirmation that receiver read it)
+        const el = document.querySelector(`[data-msg-id="${event.id}"]`);
+        if (el) {
+            el.classList.add("burning");
+            setTimeout(() => el.remove(), 400);
+        }
+        loadContacts();
     } else if (event.type === "network_log") {
         if (event.level === "bw") {
             const parts = event.text.split(":");
@@ -432,8 +457,15 @@ document.getElementById("form-create-identity").addEventListener("submit", async
 // ================================================================
 
 async function openConversation(contact) {
+    // Flush the previous conversation — this is when burn messages actually get deleted.
+    // The user has had all the time they needed to read the previous conversation.
+    if (_pendingMarkRead && _pendingMarkRead !== contact.public_key) {
+        await _flushMarkRead();
+    }
+
     currentContact = contact;
     currentGroup = null;
+    _pendingMarkRead = contact.public_key;  // will be flushed when user navigates away
 
     document.querySelectorAll(".contact-item").forEach(el =>
         el.classList.toggle("active", el.dataset.key === contact.public_key)
@@ -443,10 +475,8 @@ async function openConversation(contact) {
     document.getElementById("msg-peer-key").textContent = contact.public_key.slice(0, 24) + "…";
 
     showPanel("messages");
-    // Mark incoming messages as read and refresh sidebar badge
-    try { await api("POST", `/api/messages/${contact.public_key}/read`); } catch (_) {}
-    await loadContacts();
     await loadMessages(contact);
+    await loadContacts();  // refresh sidebar (no mark_read yet — burn messages still alive)
 }
 
 async function loadMessages(contact) {
@@ -458,10 +488,15 @@ async function loadMessages(contact) {
             const isOutgoing = msg.from_key === identity.public_key;
             const bubble = document.createElement("div");
             bubble.className = `message-bubble ${isOutgoing ? "outgoing" : "incoming"}`;
+            bubble.dataset.msgId = msg.id;
+            if (msg.burn_after_reading) bubble.classList.add("burn-message");
             const ts = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
             const statusIcon = { queued: '…', sent: '→', delivered: '✓', failed: '✗' };
             const cancelBtn = (isOutgoing && msg.status === 'queued')
                 ? `<button class="btn-cancel-msg" title="Cancel delivery" data-id="${msg.id}">×</button>`
+                : '';
+            const burnMark = msg.burn_after_reading
+                ? `<span class="burn-icon" title="Burns after reading">🔥</span>`
                 : '';
             const icon = isOutgoing
                 ? `<span class="status-icon ${msg.status}" title="${msg.status}">${statusIcon[msg.status] || ''}</span>${cancelBtn}`
@@ -490,7 +525,7 @@ async function loadMessages(contact) {
 
             bubble.innerHTML = `
                 <div class="message-text">${content}</div>
-                <div class="message-meta"><span>${ts}</span>${icon}</div>
+                <div class="message-meta"><span>${ts}</span>${burnMark}${icon}</div>
             `;
             if (_fileSave) {
                 const saveEl = bubble.querySelector(".btn-save-file");
@@ -543,6 +578,7 @@ async function sendMessage() {
     try {
         const body = { to: currentContact.public_key, onion: currentContact.onion_address };
         if (msgTtl !== null) body.ttl = msgTtl;
+        if (msgBurn) body.burn = true;
         if (pendingFile) {
             body.file_data = pendingFile.data;
             body.file_name = pendingFile.name;
@@ -553,9 +589,10 @@ async function sendMessage() {
             body.text = text;
         }
         await api("POST", "/api/messages", body);
-        // Reset per-message TTL after successful send
+        // Reset per-message overrides after successful send
         msgTtl = null;
         _updateTtlBtn();
+        if (msgBurn) { msgBurn = false; _updateBurnBtn(); }
         await loadMessages(currentContact);
     } catch (err) {
         showToast("Failed to send: " + err.message);
@@ -633,6 +670,7 @@ function handleMsgKey(e) {
 // ================================================================
 
 async function openGroup(group) {
+    await _flushMarkRead();  // burn messages in the conversation the user is leaving
     currentGroup = group;
     currentContact = null;
 
@@ -653,6 +691,7 @@ async function openGroup(group) {
 
     showPanel("group");
     await loadPosts(group);
+    await loadMemberList();  // update "Members N" counter even when panel is hidden
     // Mark as read AFTER loading posts so last_read_at is >= all visible post timestamps
     try { await api("POST", `/api/groups/${group.id}/read`); } catch (_) {}
     await loadGroups();
@@ -715,7 +754,8 @@ function handlePostKey(e) {
 // Settings
 // ================================================================
 
-function showOpsec() {
+async function showOpsec() {
+    await _flushMarkRead();
     showPanel("opsec");
     document.querySelectorAll(".contact-item, .group-item").forEach(el =>
         el.classList.remove("active")
@@ -723,6 +763,7 @@ function showOpsec() {
 }
 
 async function showSettings() {
+    await _flushMarkRead();
     showPanel("settings");
     if (!identity) return;
 
@@ -1191,6 +1232,21 @@ document.addEventListener("click", (e) => {
         document.getElementById("ttl-dropdown")?.classList.add("hidden");
     }
 });
+
+// ================================================================
+// Burn after reading toggle
+
+function toggleBurn() {
+    msgBurn = !msgBurn;
+    _updateBurnBtn();
+}
+
+function _updateBurnBtn() {
+    const btn = document.getElementById("btn-burn");
+    if (!btn) return;
+    btn.classList.toggle("burn-active", msgBurn);
+    btn.title = msgBurn ? "Burn after reading: ON — click to disable" : "Burn after reading: OFF";
+}
 
 // ================================================================
 // Network log
