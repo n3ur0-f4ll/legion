@@ -52,6 +52,7 @@ from core.protocol import (
     build_message,
 )
 from core.storage import Database
+from messaging.files import FileError, prepare_outgoing_async, sanitize_incoming_async
 
 
 # ------------------------------------------------------------------
@@ -541,11 +542,16 @@ async def post(
     db: Database,
     identity: Identity,
     group_id: str,
-    plaintext: str,
+    text: str = "",
+    file_data: bytes | None = None,
+    file_name: str | None = None,
+    mime_type: str | None = None,
     ttl: int = DEFAULT_TTL,
 ) -> dict:
     """Encrypt a post with the group key, sign it, and store it locally.
 
+    Supports text and file attachments (same JSON envelope as private messages).
+    Files are sanitized before encryption. Raises FileError on invalid file input.
     Raises LookupError if the group does not exist.
     Returns the protocol message dict ready for delivery to group members.
     """
@@ -553,7 +559,17 @@ async def post(
     if group is None:
         raise LookupError(f"Group {group_id!r} not found")
 
-    ciphertext = crypto.encrypt_group(group["group_key"], plaintext.encode())
+    if file_data is not None:
+        sanitized = await prepare_outgoing_async(file_data, file_name or "file", mime_type or "")
+        envelope = json.dumps({
+            "f": base64.b64encode(sanitized).decode(),
+            "n": file_name,
+            "m": mime_type,
+        })
+    else:
+        envelope = json.dumps({"t": text})
+
+    ciphertext = crypto.encrypt_group(group["group_key"], envelope.encode())
 
     msg = build_message(
         type=MSG_GROUP_POST,
@@ -564,7 +580,6 @@ async def post(
         ttl=ttl,
     )
 
-    now = int(time.time())
     await db.save_group_post(
         id=msg["id"],
         group_id=group_id,
@@ -573,6 +588,8 @@ async def post(
         signature=base64.b64decode(msg["signature"]),
         timestamp=msg["timestamp"],
         expires_at=msg["timestamp"] + ttl,
+        file_name=file_name,
+        mime_type=mime_type,
     )
 
     return msg
@@ -583,20 +600,33 @@ async def receive_post(
     identity: Identity,
     group_id: str,
     msg: dict,
-) -> str:
+) -> None:
     """Decrypt and store an incoming group post.
 
+    Sanitizes incoming file attachments server-side (defense-in-depth).
     msg must already be validated by validate_message() before calling this.
     Raises LookupError if the group is not known.
     Raises nacl.exceptions.CryptoError if decryption fails (wrong group key).
-    Returns the decrypted plaintext.
     """
     group = await db.get_group(group_id)
     if group is None:
         raise LookupError(f"Group {group_id!r} not found")
 
     ciphertext = base64.b64decode(msg["payload"])
-    plaintext = crypto.decrypt_group(group["group_key"], ciphertext).decode()
+    raw = crypto.decrypt_group(group["group_key"], ciphertext)
+    envelope = json.loads(raw)
+
+    file_name = mime_type = None
+    if "f" in envelope:
+        try:
+            file_bytes = base64.b64decode(envelope["f"])
+            mime_type = envelope.get("m", "application/octet-stream")
+            file_name = envelope.get("n", "file")
+            sanitized = await sanitize_incoming_async(file_bytes, mime_type)
+            envelope["f"] = base64.b64encode(sanitized).decode()
+        except Exception:
+            envelope = {"t": "[file could not be processed]"}
+            file_name = mime_type = None
 
     await db.save_group_post(
         id=msg["id"],
@@ -606,9 +636,9 @@ async def receive_post(
         signature=base64.b64decode(msg["signature"]),
         timestamp=msg["timestamp"],
         expires_at=msg["timestamp"] + msg["ttl"],
+        file_name=file_name,
+        mime_type=mime_type,
     )
-
-    return plaintext
 
 
 async def get_posts(db: Database, group_id: str) -> list[dict]:

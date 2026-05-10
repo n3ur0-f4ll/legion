@@ -63,7 +63,9 @@ CREATE TABLE IF NOT EXISTS group_posts (
     payload         BLOB NOT NULL,
     signature       BLOB NOT NULL,
     timestamp       INTEGER NOT NULL,
-    expires_at      INTEGER NOT NULL
+    expires_at      INTEGER NOT NULL,
+    file_name       TEXT DEFAULT NULL,
+    mime_type       TEXT DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS delivery_queue (

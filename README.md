@@ -2,7 +2,7 @@
 
 **Decentralized. Anonymous. Yours.**
 
-> Version `0.1.7` · Python `≥ 3.12` · Linux only · License: AGPL-3.0
+> Version `0.1.8` · Python `≥ 3.12` · Linux only · License: AGPL-3.0
 
 > author: n3ur0-f4ll
 
@@ -56,8 +56,8 @@ the content, the metadata, and the infrastructure itself.
 - **Tor Hidden Service** — every node operates as a `.onion` address; your real IP is never exposed
 - **No central infrastructure** — peer-to-peer delivery, no company, no cloud
 - **Private key encrypted at rest** — Argon2id password hashing, password required at every launch
-- **Group chats** — shared symmetric key, peer-to-peer delivery, automatic key rotation on member removal
-- **File transfer** — images re-encoded by Pillow before sending (GPS, EXIF and all metadata stripped)
+- **Group chats** — shared symmetric key, peer-to-peer delivery, file and image sharing, automatic key rotation on member removal
+- **File transfer** — images and files supported in both private chats and groups; images re-encoded by Pillow before sending (GPS, EXIF and all metadata stripped)
 - **Burn after reading** — messages marked with 🔥 are deleted from the recipient's device when they leave the conversation (giving them time to read at their own pace), and from the sender's device once the recipient confirms they read it
 - **Persistent delivery queue** — messages retry every 10 seconds while Legion is running; state is saved so retries resume after reopening the app
 - **QR contact card** — generate a QR code of your contact card for easy sharing; others scan it with any phone camera
@@ -314,6 +314,7 @@ mkdocs gh-deploy    # publishes to username.github.io/legion
 |---|---|
 | **[SECURITY.md](SECURITY.md)** | Full security model — cryptographic primitives, threat analysis, group key rotation, limitations |
 | **[SEC_AUDIT.md](SEC_AUDIT.md)** | White-box penetration test and security audit — findings, severity, fixes applied, confirmed controls |
+| **[DECISIONS.md](DECISIONS.md)** | Deliberately rejected features with full reasoning — presence indicator, voice messages, duress password, and others |
 
 The short version:
 

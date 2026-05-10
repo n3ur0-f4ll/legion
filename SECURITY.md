@@ -193,9 +193,11 @@ application is running.
 
 ## Files and Images
 
-Files are encrypted with the **same algorithm as private messages**
-(X25519 + XSalsa20-Poly1305). A file is treated as a byte sequence — the cryptography
-does not distinguish between text, images or PDF documents.
+Files are supported in both **private chats** and **group chats**. In private chats
+the file is encrypted with X25519 + XSalsa20-Poly1305 (same as any message). In group
+chats it is encrypted with the shared group key (XSalsa20-Poly1305 SecretBox). In both
+cases the file is treated as a byte sequence — the cryptography does not distinguish
+between text, images or PDF documents.
 
 ### Two-sided Sanitization
 
@@ -345,6 +347,31 @@ to 30 days (default: 7 days).
 - Messages with a `timestamp` more than 5 minutes in the future are also rejected —
   a future timestamp would make the age calculation negative, allowing a message to
   evade expiry indefinitely
+
+---
+
+## Burn After Reading
+
+Individual messages can be flagged as **burn after reading** by the sender (🔥 in the GUI).
+
+The `burn` flag is placed inside the **encrypted payload** — it is invisible to any
+third party and cannot be added or removed in transit without breaking the
+authentication tag (Poly1305 MAC).
+
+When the recipient's node processes a read event for that conversation:
+
+1. Burn messages are **immediately deleted** from the receiver's database
+2. A `read_receipt` message is sent back to the sender, encrypted with their public key
+3. When the sender's node receives the receipt, the message is deleted from their database too
+
+Both deletions happen at the database layer. If the sender is offline when the receipt
+arrives, the receipt is retried via the delivery queue; the message remains on the
+sender's device until the receipt is delivered, at which point it is removed. If the
+receipt never arrives (e.g. sender's node is gone), the message expires via the normal
+TTL mechanism and is removed by the cleanup loop.
+
+Note: this feature protects against casual access to stored messages. It does not
+protect against a recipient who screenshots or copies the message before navigating away.
 
 ---
 

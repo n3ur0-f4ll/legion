@@ -208,12 +208,20 @@ Sets `last_read_at = now` for the group.
 #### `GET /api/groups/{id}/posts`
 Returns all posts decrypted on-the-fly. Enriches each with `author_alias`
 (priority: `contacts.alias` → `group_members.alias_hint`).
+Each post includes `text` (plaintext or null) and `file_data` / `file_name` / `mime_type`
+for file attachments (null for text-only posts).
 
 #### `POST /api/groups/{id}/posts` (201)
-Posts to a group:
+Posts to a group. Supports text and file attachments (same fields as `POST /api/messages`):
 
-1. Calls `groups.post()` — SecretBox encrypts, signs, saves locally
-2. Delivers to every member using `group_members.onion_address` (peer-to-peer routing)
+- `text` (optional) — post text
+- `file_data` (optional) — base64-encoded file bytes
+- `file_name`, `mime_type` — required when `file_data` is present
+
+1. If `file_data` present: decodes, passes through `groups.post()` which calls
+   `prepare_outgoing_async()` for sanitization
+2. Otherwise: text post via `groups.post()`
+3. Delivers to every member using `group_members.onion_address` (peer-to-peer routing)
 
 ---
 

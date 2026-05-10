@@ -945,6 +945,48 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 /* ----------------------------------------------------------------
+   Image lightbox
+   ---------------------------------------------------------------- */
+
+.lightbox-box {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 4px;
+    object-fit: contain;
+    display: block;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.lightbox-close:hover { background: var(--bg-tertiary); }
+
+.msg-image { cursor: zoom-in; }
+
+/* ----------------------------------------------------------------
    Toast
    ---------------------------------------------------------------- */
 

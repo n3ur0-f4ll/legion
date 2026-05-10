@@ -40,7 +40,7 @@ Two medium-severity vulnerabilities were identified and fixed during the audit:
 - **SEC-001**: Cross-site scripting (XSS) via file attachment file name embedded in an `onclick` HTML attribute. A malicious contact could execute arbitrary JavaScript in the pywebview window, gaining full access to the Legion API.
 - **SEC-002**: The receiver-side file sanitization function did not check blocked MIME types (SVG, HTML), and the GUI rendered any `image/*` MIME type as an `<img>` element. A malicious contact could send a file declared as `image/svg+xml` containing embedded scripts.
 
-Both issues were fixed at the source before this report was finalised. All 271 automated tests continue to pass (292 as of v0.1.6 post-audit, including burn-after-reading test suite).
+Both issues were fixed at the source before this report was finalised. All 271 automated tests were passing at audit time. The test suite has since grown to 303 tests (v0.1.8) with coverage for burn-after-reading and group file attachments.
 
 The cryptographic foundations — Ed25519, Argon2id, X25519+XSalsa20-Poly1305, and SecretBox — are implemented correctly using libsodium (PyNaCl). Plaintext messages are never written to disk. The Tor integration provides network-level anonymity. The panic button performs a forensically sound wipe including `VACUUM` to overwrite freed SQLite pages.
 

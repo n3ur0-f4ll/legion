@@ -195,19 +195,26 @@ Processes an incoming `group_key_update`:
 4. Calls `update_group_key()` to replace the key in DB
 5. Returns `group_id` for SSE event, or None if ignored
 
-#### `post(db, identity, group_id, plaintext, ttl) → dict`
-Sends a group post:
+#### `post(db, identity, group_id, text, file_data, file_name, mime_type, ttl) → dict`
+Sends a group post (text or file attachment):
 
-1. Encrypts `plaintext.encode()` with `crypto.encrypt_group(group_key, plaintext)`
-2. Builds protocol message with `to = bytes.fromhex(group_id)`
-3. Saves to `group_posts`
-4. Returns message dict — caller delivers to all members via `group_members.onion_address`
+1. If `file_data` provided: calls `prepare_outgoing_async()` (sanitize + validate),
+   encodes `{"f": base64, "n": file_name, "m": mime_type}` envelope
+2. Otherwise: encodes `{"t": text}` envelope
+3. Encrypts the envelope with `crypto.encrypt_group(group_key, envelope.encode())`
+4. Builds protocol message with `to = bytes.fromhex(group_id)`
+5. Saves to `group_posts` with `file_name`/`mime_type` columns populated for file posts
+6. Returns message dict — caller delivers to all members via `group_members.onion_address`
+
+Raises `FileError` on invalid file input. Raises `LookupError` if the group is unknown.
 
 **Key difference from private messages:** posts use **SecretBox** (symmetric key shared by all
 members), not Box (asymmetric per-recipient). One ciphertext is sent to all members.
+The same JSON envelope format is used in both private messages and group posts.
 
-#### `receive_post(db, identity, group_id, msg) → str`
-Decrypts and stores an incoming post. Returns plaintext.
+#### `receive_post(db, identity, group_id, msg) → None`
+Decrypts and stores an incoming post. Sanitizes file attachments server-side
+(defense-in-depth — same as private message receive).
 Raises `LookupError` if the group is unknown, `CryptoError` if decryption fails
 (e.g. after receiving a `group_key_update` out of order).
 

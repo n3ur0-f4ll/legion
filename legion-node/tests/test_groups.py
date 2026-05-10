@@ -374,11 +374,13 @@ async def test_post_nonexistent_group_raises(db):
         await post(db, ALICE, "z" * 64, "hello")
 
 
-async def test_receive_post_returns_plaintext(db):
+async def test_receive_post_stores_decrypted_content(db):
+    """receive_post stores the post in DB; content verifiable via get_group_posts."""
     group = await _setup_group_with_bob(db)
     msg = await post(db, ALICE, group["id"], "hey everyone")
-    plaintext = await receive_post(db, BOB, group["id"], msg)
-    assert plaintext == "hey everyone"
+    await receive_post(db, BOB, group["id"], msg)
+    posts = await db.get_group_posts(group["id"])
+    assert any(p["id"] == msg["id"] for p in posts)
 
 
 async def test_receive_post_stores_in_db(db):

@@ -150,6 +150,34 @@ through deniability in a system whose source code is publicly auditable.
 
 ---
 
+## Why there is no in-app text or code preview for file attachments
+
+**The feature:** When a contact sends a `.py`, `.txt`, `.json` or other text-based
+file, render its contents directly in the chat window — similar to how images are
+displayed inline.
+
+**Why it was rejected:**
+
+Images have a well-defined sanitisation pipeline: Pillow re-encodes them from scratch,
+stripping all metadata, validating the format, and producing a clean output. There is
+no equivalent filter for arbitrary text content. Rendering text directly in a WebKit
+view — even inside a `<pre>` element — raises questions about encoding edge cases,
+bidirectional text exploits, and format-specific quirks that each file type would
+require individually.
+
+More fundamentally, Legion is a messenger, not an editor or viewer. Receiving a file
+means the recipient wants to *use* it in the appropriate tool — a text editor, IDE,
+PDF viewer, or spreadsheet application. Reproducing a degraded version of that
+experience inside the chat window adds complexity without adding value.
+
+The current behaviour — show filename, size, and a Save button — is complete and
+sufficient. The recipient saves the file in one click and opens it where it belongs.
+
+**The principle:** Every rendered format is an attack surface. Only render what you
+can sanitise completely. For everything else, hand it off to the operating system.
+
+---
+
 ## How to propose a feature
 
 If you believe a feature was rejected incorrectly, or if circumstances have changed

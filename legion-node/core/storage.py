@@ -441,10 +441,15 @@ class Database:
         signature: bytes,
         timestamp: int,
         expires_at: int,
+        file_name: str | None = None,
+        mime_type: str | None = None,
     ) -> None:
         await self._conn.execute(
-            "INSERT OR IGNORE INTO group_posts VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (id, group_id, author_key, payload, signature, timestamp, expires_at),
+            "INSERT OR IGNORE INTO group_posts "
+            "(id, group_id, author_key, payload, signature, timestamp, expires_at, "
+            "file_name, mime_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (id, group_id, author_key, payload, signature, timestamp, expires_at,
+             file_name, mime_type),
         )
         await self._conn.commit()
 
@@ -534,6 +539,8 @@ async def _apply_schema(conn: aiosqlite.Connection) -> None:
         "ALTER TABLE group_members ADD COLUMN alias_hint TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE groups ADD COLUMN last_read_at INTEGER DEFAULT 0",
         "ALTER TABLE messages ADD COLUMN burn_after_reading INTEGER DEFAULT 0",
+        "ALTER TABLE group_posts ADD COLUMN file_name TEXT DEFAULT NULL",
+        "ALTER TABLE group_posts ADD COLUMN mime_type TEXT DEFAULT NULL",
     ):
         try:
             await conn.execute(migration)

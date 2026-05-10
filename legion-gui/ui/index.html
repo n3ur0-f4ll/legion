@@ -162,7 +162,16 @@
                 <div class="message-input-row">
                     <textarea id="post-input" placeholder="Write a post…" rows="1"
                         onkeydown="handlePostKey(event)"></textarea>
+                    <label class="btn-attach" title="Attach file (max 5 MB)">
+                        📎<input id="post-file" type="file" style="display:none"
+                               onchange="handlePostFileSelected(this)">
+                    </label>
                     <button class="btn-send" onclick="sendPost()">Post</button>
+                </div>
+                <div id="post-file-preview" class="file-preview hidden">
+                    <span id="post-file-preview-name"></span>
+                    <button onclick="clearPostFileSelection()"
+                        style="background:transparent;color:var(--text-secondary);border:none;cursor:pointer;font-size:14px">×</button>
                 </div>
             </div>
 
@@ -380,6 +389,14 @@
             <button class="btn-secondary" onclick="saveQR()">Save as PNG</button>
             <button class="btn-primary" onclick="closeModal('modal-qr')">Close</button>
         </div>
+    </div>
+</div>
+
+<!-- Image lightbox modal -->
+<div id="modal-image" class="modal hidden" onclick="closeModal('modal-image')">
+    <div class="lightbox-box" onclick="event.stopPropagation()">
+        <img id="lightbox-img" src="" alt="" class="lightbox-img">
+        <button class="lightbox-close" onclick="closeModal('modal-image')">×</button>
     </div>
 </div>
 

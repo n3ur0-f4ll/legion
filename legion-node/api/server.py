@@ -162,7 +162,10 @@ class InviteMemberRequest(BaseModel):
 
 
 class PostGroupRequest(BaseModel):
-    text: str
+    text: str | None = None
+    file_data: str | None = None
+    file_name: str | None = None
+    mime_type: str | None = None
 
 
 class UnlockRequest(BaseModel):
@@ -651,7 +654,22 @@ def create_app(state: AppState) -> FastAPI:
     ):
         s, identity = deps
         try:
-            msg = await groups.post(s.db, identity, group_id, req.text)
+            if req.file_data is not None:
+                if not req.file_name or not req.mime_type:
+                    raise HTTPException(status_code=422,
+                                        detail="file_name and mime_type required")
+                try:
+                    file_bytes = base64.b64decode(req.file_data)
+                    msg = await groups.post(
+                        s.db, identity, group_id,
+                        file_data=file_bytes,
+                        file_name=req.file_name,
+                        mime_type=req.mime_type,
+                    )
+                except FileError as exc:
+                    raise HTTPException(status_code=422, detail=str(exc))
+            else:
+                msg = await groups.post(s.db, identity, group_id, text=req.text or "")
         except LookupError as exc:
             raise HTTPException(status_code=404, detail=str(exc))
 
@@ -902,16 +920,25 @@ def _decrypt_message(row: dict, identity) -> dict:
 
 
 def _decrypt_post(row: dict, group_key: bytes | None) -> dict:
-    """Add decrypted 'text' field to a group post row. Sets text=None on failure."""
+    """Decrypt a group post row; extracts text or file_data. Sets both to None on failure."""
     result = dict(row)
+    result.pop("payload", None)
+    result.pop("signature", None)
+    result["text"] = None
+    result["file_data"] = None
     try:
         if group_key is None:
             raise ValueError("no group key")
-        result["text"] = crypto.decrypt_group(group_key, row["payload"]).decode()
+        raw = crypto.decrypt_group(group_key, row["payload"])
+        envelope = json.loads(raw)
+        if "t" in envelope:
+            result["text"] = envelope["t"]
+        elif "f" in envelope:
+            result["file_data"] = envelope["f"]
+            result["file_name"] = envelope.get("n")
+            result["mime_type"] = envelope.get("m")
     except Exception:
-        result["text"] = None
-    result.pop("payload", None)
-    result.pop("signature", None)
+        pass
     return result
 
 

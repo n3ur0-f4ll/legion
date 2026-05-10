@@ -10,7 +10,8 @@ let currentContact = null;    // { public_key, alias, onion_address }
 let currentGroup = null;      // { id, name, is_admin }
 let eventSource = null;
 let refreshTimer = null;
-let pendingFile = null;       // { data: base64, name, mime } | null
+let pendingFile = null;       // { data: base64, name, mime } | null  (private messages)
+let pendingGroupFile = null;  // { data: base64, name, mime } | null  (group posts)
 
 // Network log state
 const NET_LOG_MAX = 200;
@@ -513,7 +514,8 @@ async function loadMessages(contact) {
                 _fileSave = { data: msg.file_data, name: msg.file_name || "file" };
                 if (SAFE_IMG_TYPES.has(msg.mime_type)) {
                     const dataUrl = `data:${msg.mime_type};base64,${msg.file_data}`;
-                    content = `<img class="msg-image" src="${dataUrl}" alt="${name}">${saveBtn}`;
+                    content = `<img class="msg-image" src="${dataUrl}" alt="${name}"
+                        onclick="openImageLightbox(this.src)">${saveBtn}`;
                 } else {
                     content = `<div>📄 ${name} (${size} KB)</div>${saveBtn}`;
                 }
@@ -655,6 +657,35 @@ function clearFileSelection() {
     document.getElementById("file-preview-name").textContent = "";
 }
 
+function handlePostFileSelected(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const MAX = 5 * 1024 * 1024;
+    if (file.size > MAX) {
+        showToast("File too large (max 5 MB)");
+        input.value = "";
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const base64 = e.target.result.split(",")[1];
+        pendingGroupFile = { data: base64, name: file.name, mime: _detectMime(file) };
+        document.getElementById("post-file-preview-name").textContent = `📎 ${file.name}`;
+        document.getElementById("post-file-preview").classList.remove("hidden");
+    };
+    reader.onerror = () => { showToast("Could not read file"); input.value = ""; };
+    reader.readAsDataURL(file);
+    input.value = "";
+}
+
+function clearPostFileSelection() {
+    pendingGroupFile = null;
+    const preview = document.getElementById("post-file-preview");
+    if (preview) preview.classList.add("hidden");
+    const name = document.getElementById("post-file-preview-name");
+    if (name) name.textContent = "";
+}
+
 function handleMsgKey(e) {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -684,8 +715,9 @@ async function openGroup(group) {
     } else {
         adminActions.classList.add("hidden");
     }
-    // Hide member list when switching groups
+    // Hide member list when switching groups; clear any pending file attachment
     document.getElementById("member-list-panel").classList.add("hidden");
+    clearPostFileSelection();
 
     showPanel("group");
     await loadPosts(group);
@@ -708,14 +740,36 @@ async function loadPosts(group) {
             const author = isOurs
                 ? "You"
                 : esc(post.author_alias || (post.author_key.slice(0, 10) + "…"));
-            const text = post.text != null ? esc(post.text) : '<em style="opacity:.5">[encrypted]</em>';
+            let postContent;
+            let _postFileSave = null;
+            if (post.file_data && post.mime_type) {
+                const name = esc(post.file_name || "file");
+                const size = Math.round(atob(post.file_data).length / 1024);
+                const saveBtn = `<button class="btn-copy btn-save-post-file" style="margin-top:6px">↓ Save</button>`;
+                _postFileSave = { data: post.file_data, name: post.file_name || "file" };
+                if (SAFE_IMG_TYPES.has(post.mime_type)) {
+                    const dataUrl = `data:${post.mime_type};base64,${post.file_data}`;
+                    postContent = `<img class="msg-image" src="${dataUrl}" alt="${name}"
+                        onclick="openImageLightbox(this.src)">${saveBtn}`;
+                } else {
+                    postContent = `<div>📄 ${name} (${size} KB)</div>${saveBtn}`;
+                }
+            } else {
+                postContent = post.text != null ? esc(post.text) : '<em style="opacity:.5">[encrypted]</em>';
+            }
+
             bubble.innerHTML = `
-                <div class="message-text">${text}</div>
+                <div class="message-text">${postContent}</div>
                 <div class="message-meta">
                     <span>${author}</span>
                     <span>${ts}</span>
                 </div>
             `;
+            if (_postFileSave) {
+                const saveEl = bubble.querySelector(".btn-save-post-file");
+                if (saveEl) saveEl.addEventListener("click",
+                    () => saveAttachment(_postFileSave.data, _postFileSave.name));
+            }
             list.appendChild(bubble);
         });
         _scrollToBottom(list);
@@ -726,13 +780,23 @@ async function sendPost() {
     if (!currentGroup) return;
     const input = document.getElementById("post-input");
     const text = input.value.trim();
-    if (!text) return;
+    if (!text && !pendingGroupFile) return;
 
     input.value = "";
     input.style.height = "auto";
 
     try {
-        await api("POST", `/api/groups/${currentGroup.id}/posts`, { text });
+        const body = {};
+        if (pendingGroupFile) {
+            body.file_data = pendingGroupFile.data;
+            body.file_name = pendingGroupFile.name;
+            body.mime_type = pendingGroupFile.mime;
+            if (text) body.text = text;
+            clearPostFileSelection();
+        } else {
+            body.text = text;
+        }
+        await api("POST", `/api/groups/${currentGroup.id}/posts`, body);
         await loadPosts(currentGroup);
     } catch (err) {
         showToast("Failed to post: " + err.message);
@@ -1164,6 +1228,11 @@ function closeModal(id) {
     document.getElementById(id).classList.add("hidden");
 }
 
+function openImageLightbox(src) {
+    document.getElementById("lightbox-img").src = src;
+    openModal("modal-image");
+}
+
 function copyToClipboard(text, successMsg = "Copied") {
     if (window.pywebview && window.pywebview.api) {
         window.pywebview.api.copy_to_clipboard(text).then(ok => {
@@ -1339,4 +1408,9 @@ document.querySelectorAll(".modal").forEach(modal => {
     modal.addEventListener("click", (e) => {
         if (e.target === modal) closeModal(modal.id);
     });
+});
+
+// Close lightbox on Escape
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal("modal-image");
 });
