@@ -14,21 +14,18 @@ Every message travels end-to-end encrypted through the Tor network.
 
 ## Who it's for
 
-Legion is built for people who need communication that cannot be intercepted,
-blocked, or handed over to a third party — because there is no third party.
+Legion is built for anyone who wants a private life to actually be private.
 
-- **Journalists and sources** — exchange information without leaving a trail that can be
-  subpoenaed, seized, or leaked through a company's servers
-- **Lawyers and clients** — attorney-client privilege enforced at the cryptographic level,
-  not just by contract
-- **Activists and human rights workers** — no central server to block, no company to
-  pressure, no account to suspend
+- **Anyone tired of being the product** — no company owns your conversations, no
+  algorithm indexes them, no business model is built on them
+- **Anyone exchanging sensitive information** — personal, professional, or otherwise —
+  that belongs only to the people in the conversation
 - **Security researchers** — fully auditable, open source, no black boxes
-- **Anyone in a high-risk environment** — people whose location, identity, or
-  communications must remain private regardless of who is watching the network
+- **Anyone who has thought about it** — if your messages were exposed tomorrow,
+  would you be comfortable? Legion is for people who take that question seriously
 
-If your threat model is "a company might get hacked or receive a legal order,"
-Legion eliminates that threat at the architectural level.
+Freedom of expression is a right. What you do with it is a matter of your own
+conscience. A private conversation should not need to justify itself.
 
 ---
 
